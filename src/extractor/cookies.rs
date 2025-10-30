@@ -94,7 +94,7 @@ impl ExtractorCookieHandle for YtExtractor {
     ) -> Result<String> {
         let now: SystemTime = SystemTime::now();
         let epoch_duration = now.duration_since(UNIX_EPOCH)?;
-        let time_stamp = epoch_duration.as_secs_f64().round();
+        let time_stamp = epoch_duration.as_secs_f64().round().to_string();
 
         let mut hash_parts: Vec<String> = Vec::new();
 
@@ -107,18 +107,17 @@ impl ExtractorCookieHandle for YtExtractor {
             hash_parts.push(joined);
         }
 
-        hash_parts.extend_from_slice(&[
-            time_stamp.to_string(),
-            sid.to_string(),
-            origin.to_string(),
-        ]);
+        hash_parts.extend_from_slice(&[time_stamp.clone(), sid.to_string(), origin.to_string()]);
         let joined = hash_parts.join(" ");
 
         let mut hasher = Sha1::new();
         hasher.update(joined.as_bytes());
-        let sid_hash = hasher.finalize();
+        let sid_hash = format!("{:x}", hasher.finalize());
 
         let mut parts: Vec<String> = Vec::new();
+
+        parts.push(time_stamp);
+        parts.push(sid_hash);
 
         if !additional_parts.is_empty() {
             let joined = additional_parts
