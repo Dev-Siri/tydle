@@ -31,7 +31,7 @@ impl SidCookies {
 pub trait ExtractorCookieHandle {
     fn get_cookies(&self, url: &str) -> Result<HashMap<String, String>>;
     fn get_youtube_cookies(&self) -> Result<HashMap<String, String>>;
-    /// Get SAPISID, 1PSAPISID, 3PSAPISID cookie values
+    /// Get SAPISID, 1PSAPISID, 3PSAPISID cookie values.
     fn get_sid_cookies(&self) -> Result<SidCookies>;
     fn make_sid_authorization(
         &self,
@@ -115,10 +115,7 @@ impl ExtractorCookieHandle for YtExtractor {
         hasher.update(joined.as_bytes());
         let sid_hash = format!("{:x}", hasher.finalize());
 
-        let mut parts: Vec<String> = Vec::new();
-
-        parts.push(time_stamp);
-        parts.push(sid_hash);
+        let mut parts: Vec<String> = vec![time_stamp, sid_hash];
 
         if !additional_parts.is_empty() {
             let joined = additional_parts

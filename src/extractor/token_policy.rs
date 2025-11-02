@@ -1,8 +1,9 @@
 use std::{collections::HashMap, hash::Hash};
 
 use once_cell::sync::Lazy;
+use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize)]
 pub enum StreamingProtocol {
     Https,
     Dash,
@@ -19,7 +20,7 @@ impl StreamingProtocol {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct GvsPoTokenPolicy {
     pub required: bool,
     /// Try to fetch a PO Token even if it is not required.
@@ -53,7 +54,7 @@ pub fn create_default_gvs_po_token_policy() -> HashMap<StreamingProtocol, GvsPoT
     gvs_po_token_policy
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct PlayerPoTokenPolicy {
     pub required: bool,
     pub recommended: bool,
@@ -70,7 +71,7 @@ impl PlayerPoTokenPolicy {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize)]
 pub struct SubsPoTokenPolicy {
     pub required: bool,
     pub recommended: bool,

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 
 use extractor::yt_interface::VideoId;

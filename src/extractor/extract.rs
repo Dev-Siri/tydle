@@ -20,8 +20,14 @@ pub struct YtExtractor {
 }
 
 pub trait InfoExtractor {
-    /// Index of current account in account list.
-    fn extract_session_index(&self, data: Vec<HashMap<String, String>>) -> Option<i32>;
+    fn generate_checkok_params(&self) -> HashMap<&str, &str>;
+    fn get_text(
+        &self,
+        data: &Value,
+        path_list: Option<Vec<Vec<&str>>>,
+        max_runs: Option<usize>,
+    ) -> Option<String>;
+    fn is_premium_subscriber(&self, initial_data: &HashMap<String, Value>) -> Result<bool>;
     fn extract_ytcfg(&self, webpage_content: String) -> Result<HashMap<String, Value>>;
     fn extract_yt_initial_data(&self, webpage_content: String) -> Result<HashMap<String, Value>>;
     async fn initial_extract(
@@ -52,14 +58,105 @@ impl YtExtractor {
 }
 
 impl InfoExtractor for YtExtractor {
-    fn extract_session_index(&self, data: Vec<HashMap<String, String>>) -> Option<i32> {
-        for yt_cfg in data {
-            if let Some(session_index) = yt_cfg.get("SESSION_INDEX") {
-                return Some(session_index.parse().unwrap_or_default());
+    fn generate_checkok_params(&self) -> HashMap<&str, &str> {
+        let mut checkout_params_map = HashMap::new();
+
+        checkout_params_map.insert("contentCheckOk", "true");
+        checkout_params_map.insert("racyCheckOk", "true");
+
+        checkout_params_map
+    }
+
+    fn get_text(
+        &self,
+        data: &Value,
+        path_list: Option<Vec<Vec<&str>>>,
+        max_runs: Option<usize>,
+    ) -> Option<String> {
+        let paths = path_list.unwrap_or_else(|| vec![vec![]]);
+        for path in paths {
+            let mut current = data;
+            for key in &path {
+                if !current.is_object() {
+                    current = &Value::Null;
+                    break;
+                }
+                current = current.get(*key).unwrap_or(&Value::Null);
+            }
+
+            let objs: Vec<&Value> = if path.is_empty() {
+                vec![data]
+            } else if !current.is_null() {
+                vec![current]
+            } else {
+                continue;
+            };
+
+            for item in objs {
+                if let Some(text) = item.get("simpleText").and_then(|v| v.as_str()) {
+                    return Some(text.to_string());
+                }
+
+                let mut runs: Vec<Value> = item
+                    .get("runs")
+                    .and_then(|v| v.as_array())
+                    .cloned()
+                    .unwrap_or_else(|| {
+                        if let Some(arr) = item.as_array() {
+                            arr.clone()
+                        } else {
+                            vec![]
+                        }
+                    });
+
+                if runs.is_empty() {
+                    continue;
+                }
+
+                if let Some(limit) = max_runs {
+                    runs.truncate(limit.min(runs.len()));
+                }
+
+                let text = runs
+                    .iter()
+                    .filter_map(|r| r.get("text").and_then(|t| t.as_str()))
+                    .collect::<String>();
+
+                if !text.is_empty() {
+                    return Some(text);
+                }
             }
         }
 
         None
+    }
+
+    fn is_premium_subscriber(&self, initial_data: &HashMap<String, Value>) -> Result<bool> {
+        if !self.is_authenticated()? || initial_data.is_empty() {
+            return Ok(false);
+        }
+
+        let tlr = initial_data
+            .get("topbar")
+            .and_then(|v| v.get("desktopTopbarRenderer"))
+            .and_then(|v| v.get("logo"))
+            .and_then(|v| v.get("topbarLogoRenderer"));
+        let logo_match = tlr
+            .and_then(|v| v.get("iconImage"))
+            .and_then(|v| v.get("iconType"))
+            .unwrap_or(&Value::Null);
+        let logo_match_str = logo_match.as_str().unwrap_or_default();
+
+        Ok(logo_match_str == "YOUTUBE_PREMIUM_LOGO"
+            || self
+                .get_text(
+                    tlr.unwrap_or_default(),
+                    Some(vec![vec!["tooltipText"]]),
+                    None,
+                )
+                .unwrap_or_default()
+                .to_lowercase()
+                .contains("premium"))
     }
 
     fn extract_ytcfg(&self, webpage_content: String) -> Result<HashMap<String, Value>> {
@@ -105,12 +202,21 @@ impl InfoExtractor for YtExtractor {
             .download_initial_webpage(webpage_url, webpage_client, video_id)
             .await?;
 
-        // ! SKIPPED DEFAULT HERE
         let mut webpage_ytcfg = self.extract_ytcfg(webpage.clone())?;
 
-        println!("{:?}", webpage_ytcfg);
+        if webpage_ytcfg.is_empty() {
+            webpage_ytcfg = self
+                .select_default_ytcfg(Some(webpage_client))?
+                .to_json_val_hashmap()?;
+        }
+        let initial_data = self
+            .download_initial_data(video_id, webpage, webpage_client, &webpage_ytcfg)
+            .await?;
 
-        println!("{:?}", self.extract_yt_initial_data(webpage)?);
+        let is_premium_subscriber = self.is_premium_subscriber(&initial_data)?;
+
+        println!("webpage ytcfg: {:#?}", initial_data);
+        println!("is premium? {}", is_premium_subscriber);
 
         Ok(())
     }

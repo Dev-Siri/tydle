@@ -5,18 +5,21 @@ use serde_json::Value;
 use url::Url;
 
 use crate::extractor::{
+    api::ExtractorApiHandle,
     client::INNERTUBE_CLIENTS,
     extract::{InfoExtractor, YtExtractor},
-    yt_interface::{VideoId, YtClient},
+    yt_interface::{VideoId, YtClient, YtEndpoint},
+    ytcfg::ExtractorYtCfgHandle,
 };
 
 pub trait ExtractorDownloadHandle {
     async fn download_initial_data(
         &self,
+        video_id: &VideoId,
         webpage_content: String,
         webpage_client: &YtClient,
         webpage_ytcfg: &HashMap<String, Value>,
-    ) -> Result<()>;
+    ) -> Result<HashMap<String, Value>>;
     async fn download_initial_webpage(
         &self,
         webpage_url: &str,
@@ -28,17 +31,34 @@ pub trait ExtractorDownloadHandle {
 impl ExtractorDownloadHandle for YtExtractor {
     async fn download_initial_data(
         &self,
+        video_id: &VideoId,
         webpage_content: String,
         webpage_client: &YtClient,
         webpage_ytcfg: &HashMap<String, Value>,
-    ) -> Result<()> {
-        let initial_data: Option<HashMap<String, Value>> = if !webpage_content.is_empty() {
+    ) -> Result<HashMap<String, Value>> {
+        let mut initial_data: Option<HashMap<String, Value>> = if !webpage_content.is_empty() {
             Some(self.extract_yt_initial_data(webpage_content)?)
         } else {
             None
         };
 
-        Ok(())
+        if initial_data.is_none() {
+            let mut query = self.generate_checkok_params();
+            query.insert("videoId", video_id.as_str());
+            initial_data = Some(
+                self.call_api(
+                    YtEndpoint::Next,
+                    query,
+                    None,
+                    Some(self.select_context(Some(webpage_ytcfg), Some(webpage_client))?),
+                    None,
+                    Some(webpage_client),
+                )
+                .await?,
+            );
+        }
+
+        Ok(initial_data.unwrap())
     }
 
     // ! DOES NOT YET IMPLEMENT PLAYER PARAMS
@@ -65,9 +85,6 @@ impl ExtractorDownloadHandle for YtExtractor {
 
         let response = webpage_request.send().await?;
 
-        for (key, value) in response.headers() {
-            println!("{}: {}", key.as_str(), value.to_str()?);
-        }
         let webpage = response.text().await.map_err(|e| anyhow::Error::new(e))?;
 
         Ok(webpage)

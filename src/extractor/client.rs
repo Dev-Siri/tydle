@@ -1,6 +1,8 @@
+use anyhow::Result;
 use once_cell::sync::Lazy;
+use serde::Serialize;
 use serde_json::Value;
-use std::{collections::HashMap, ops::Index};
+use std::collections::HashMap;
 
 use crate::extractor::{
     token_policy::{
@@ -10,19 +12,39 @@ use crate::extractor::{
     yt_interface::{PREFERRED_LOCALE, YtClient},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct InnerTubeClient {
+    #[serde(rename = "INNERTUBE_CONTEXT")]
     pub innertube_context: HashMap<&'static str, HashMap<&'static str, Value>>,
+    #[serde(rename = "INNERTUBE_HOST")]
     pub innertube_host: &'static str,
+    #[serde(rename = "INNERTUBE_CONTEXT_CLIENT_NAME")]
     pub innertube_context_client_name: i32,
+    #[serde(rename = "SUPPORTS_COOKIES")]
     pub supports_cookies: bool,
+    #[serde(rename = "REQUIRE_JS_PLAYER")]
     pub require_js_player: bool,
+    #[serde(rename = "REQUIRE_AUTH")]
     pub require_auth: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub authenticated_user_agent: Option<&'static str>,
+    #[serde(rename = "GVS_PO_TOKEN_POLICY")]
     pub gvs_po_token_policy: HashMap<StreamingProtocol, GvsPoTokenPolicy>,
+    #[serde(rename = "PLAYER_PO_TOKEN_POLICY")]
     pub player_po_token_policy: PlayerPoTokenPolicy,
+    #[serde(rename = "SUBS_PO_TOKEN_POLICY")]
     pub subs_po_token_policy: SubsPoTokenPolicy,
+    #[serde(skip_serializing)]
     pub priority: isize,
+}
+
+impl InnerTubeClient {
+    pub fn to_json_val_hashmap(&self) -> Result<HashMap<String, Value>> {
+        Ok(match serde_json::to_value(self)? {
+            Value::Object(obj) => obj.into_iter().collect(),
+            _ => HashMap::new(),
+        })
+    }
 }
 
 pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::new(|| {

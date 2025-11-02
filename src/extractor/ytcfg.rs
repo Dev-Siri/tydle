@@ -7,13 +7,18 @@ use crate::extractor::{
     auth::ExtractorAuthHandle,
     client::{INNERTUBE_CLIENTS, InnerTubeClient},
     extract::YtExtractor,
-    yt_interface::{DEFAULT_YT_CLIENT, YtClient},
+    yt_interface::{DEFAULT_YT_CLIENT, PREFERRED_LOCALE, YtClient},
 };
 
 pub trait ExtractorYtCfgHandle {
     fn select_api_hostname(&self, default_client: Option<&YtClient>) -> &str;
     fn select_client_version(&self, default_client: Option<&YtClient>) -> &str;
-    fn select_context(&self, default_client: Option<&YtClient>) -> HashMap<&str, Value>;
+    fn select_context(
+        &self,
+        ytcfg: Option<&HashMap<String, Value>>,
+        default_client: Option<&YtClient>,
+    ) -> Result<HashMap<String, Value>>;
+    fn select_visitor_data(&self, args: &HashMap<String, Value>) -> Option<String>;
     fn select_default_ytcfg(&self, default_client: Option<&YtClient>) -> Result<InnerTubeClient>;
 }
 
@@ -36,21 +41,66 @@ impl ExtractorYtCfgHandle for YtExtractor {
             .unwrap()
     }
 
-    fn select_context(&self, default_client: Option<&YtClient>) -> HashMap<&str, Value> {
+    fn select_context(
+        &self,
+        ytcfg: Option<&HashMap<String, Value>>,
+        default_client: Option<&YtClient>,
+    ) -> Result<HashMap<String, Value>> {
         let client = default_client.unwrap_or(&DEFAULT_YT_CLIENT);
-        let innertube_client = INNERTUBE_CLIENTS.get(client).unwrap();
+
+        let innertube_client = match ytcfg {
+            Some(cfg) => cfg,
+            None => &INNERTUBE_CLIENTS
+                .get(client)
+                .unwrap()
+                .to_json_val_hashmap()?,
+        };
+
         let mut client_context = innertube_client
-            .innertube_context
-            .get("client")
-            .unwrap()
-            .clone();
+            .get("INNERTUBE_CONTEXT")
+            .and_then(|v| v.get("client"))
+            .cloned()
+            .unwrap_or_else(|| Value::Object(serde_json::Map::new()));
 
-        // TODO: set this correctly with pref lang
-        client_context.insert("hl", "en".into());
-        client_context.insert("timeZone", "UTC".into());
-        client_context.insert("utcOffsetMinutes", "0".into());
+        if let Some(map) = client_context.as_object_mut() {
+            map.insert(
+                "hl".to_string(),
+                Value::String(PREFERRED_LOCALE.to_string()),
+            );
+            map.insert("timeZone".to_string(), Value::String("UTC".to_string()));
+            map.insert("utcOffsetMinutes".to_string(), Value::Number(0.into()));
+        }
 
-        client_context
+        if let Value::Object(map) = client_context {
+            Ok(map.into_iter().collect())
+        } else {
+            Ok(HashMap::new())
+        }
+    }
+
+    fn select_visitor_data(&self, ytcfg: &HashMap<String, Value>) -> Option<String> {
+        if let Some(v) = ytcfg.get("VISITOR_DATA").and_then(|v| v.as_str()) {
+            return Some(v.to_string());
+        }
+
+        if let Some(v) = ytcfg
+            .get("INNERTUBE_CONTEXT")
+            .and_then(|v| v.get("client"))
+            .and_then(|v| v.get("visitorData"))
+            .and_then(|v| v.as_str())
+        {
+            return Some(v.to_string());
+        }
+
+        if let Some(v) = ytcfg
+            .get("responseContext")
+            .and_then(|v| v.get("visitorData"))
+            .and_then(|v| v.as_str())
+        {
+            return Some(v.to_string());
+        }
+
+        None
     }
 
     fn select_default_ytcfg(&self, default_client: Option<&YtClient>) -> Result<InnerTubeClient> {
