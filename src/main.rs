@@ -10,7 +10,7 @@ mod ty;
 #[tokio::main]
 async fn main() -> Result<()> {
     let mut extractor = YtExtractor::new()?;
-    let video_id = VideoId::new("UWn9RdueB7E")?;
+    let video_id = VideoId::new("")?;
 
     extractor.extract_streams(&video_id).await?;
 
