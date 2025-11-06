@@ -40,10 +40,18 @@ pub struct InnerTubeClient {
 
 impl InnerTubeClient {
     pub fn to_json_val_hashmap(&self) -> Result<HashMap<String, Value>> {
-        Ok(match serde_json::to_value(self)? {
-            Value::Object(obj) => obj.into_iter().collect(),
-            _ => HashMap::new(),
-        })
+        let serialized = serde_json::to_value(self)?;
+
+        if let Value::Object(obj) = serialized {
+            let mut hashmap = HashMap::new();
+            for (k, v) in obj {
+                hashmap.insert(k, v);
+            }
+
+            return Ok(hashmap);
+        }
+
+        Ok(HashMap::new())
     }
 }
 
@@ -184,19 +192,19 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut web_android_context = HashMap::new();
-    let mut web_android_context_client: HashMap<&str, Value> = HashMap::new();
+    let mut android_context = HashMap::new();
+    let mut android_context_client: HashMap<&str, Value> = HashMap::new();
 
-    web_android_context_client.insert("clientName", "ANDROID".into());
-    web_android_context_client.insert("clientVersion", "20.10.38".into());
-    web_android_context_client.insert("androidSdkVersion", 30.into());
-    web_android_context_client.insert(
+    android_context_client.insert("clientName", "ANDROID".into());
+    android_context_client.insert("clientVersion", "20.10.38".into());
+    android_context_client.insert("androidSdkVersion", 30.into());
+    android_context_client.insert(
         "userAgent",
         "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
     );
-    web_android_context_client.insert("osName", "Android".into());
-    web_android_context_client.insert("osVersion", "11".into());
-    web_android_context_client.insert("hl", PREFERRED_LOCALE.into());
+    android_context_client.insert("osName", "Android".into());
+    android_context_client.insert("osVersion", "11".into());
+    android_context_client.insert("hl", PREFERRED_LOCALE.into());
 
     let mut android_gvs_po_token_policy = HashMap::new();
     android_gvs_po_token_policy.insert(
@@ -229,12 +237,12 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    web_android_context.insert("client", web_android_context_client);
+    android_context.insert("client", android_context_client);
     m.insert(
         YtClient::Android,
         InnerTubeClient {
             priority: 0,
-            innertube_context: web_android_context,
+            innertube_context: android_context,
             innertube_host: DEFAULT_INNERTUBE_HOST,
             innertube_context_client_name: 3,
             supports_cookies: false,

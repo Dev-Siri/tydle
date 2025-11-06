@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use reqwest::Url;
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::extractor::{
     auth::ExtractorAuthHandle,
@@ -19,12 +19,13 @@ pub trait ExtractorApiHandle {
         delegated_session_id: Option<String>,
         user_session_id: Option<String>,
         session_index: Option<i32>,
+        visitor_id: Option<String>,
         default_client: Option<&YtClient>,
     ) -> Result<HashMap<&str, String>>;
     async fn call_api(
         &self,
         endpoint: YtEndpoint,
-        query: HashMap<&str, &str>,
+        query: HashMap<String, Value>,
         headers: Option<HashMap<&str, String>>,
         context: Option<HashMap<String, Value>>,
         api_key: Option<String>,
@@ -39,6 +40,7 @@ impl ExtractorApiHandle for YtExtractor {
         delegated_session_id: Option<String>,
         user_session_id: Option<String>,
         session_index: Option<i32>,
+        visitor_id: Option<String>,
         default_client: Option<&YtClient>,
     ) -> Result<HashMap<&str, String>> {
         let client = default_client.unwrap_or(&DEFAULT_YT_CLIENT);
@@ -60,14 +62,16 @@ impl ExtractorApiHandle for YtExtractor {
 
         headers.insert("Origin", origin.clone());
 
-        if let Some(visitor_id) = self.select_visitor_data(&ytcfg) {
-            headers.insert("X-Goog-Visitor-Id", visitor_id);
+        if let Some(available_visitor_id) = visitor_id {
+            headers.insert("X-Goog-Visitor-Id", available_visitor_id);
+        } else if let Some(selected_visitor_id) = self.select_visitor_data(&[&ytcfg]) {
+            headers.insert("X-Goog-Visitor-Id", selected_visitor_id);
         }
 
         let innertube_client_context = innertube_client.innertube_context.get("client").unwrap();
 
         if let Some(user_agent) = innertube_client_context.get("userAgent") {
-            headers.insert("User-Agent", user_agent.to_string());
+            headers.insert("User-Agent", user_agent.as_str().unwrap_or_default().into());
         }
 
         let cookie_headers = self.generate_cookie_auth_headers(
@@ -78,9 +82,7 @@ impl ExtractorApiHandle for YtExtractor {
             origin,
         )?;
 
-        for (k, v) in cookie_headers {
-            headers.insert(k, v);
-        }
+        headers.extend(cookie_headers);
 
         Ok(headers)
     }
@@ -88,7 +90,7 @@ impl ExtractorApiHandle for YtExtractor {
     async fn call_api(
         &self,
         endpoint: YtEndpoint,
-        query: HashMap<&str, &str>,
+        query: HashMap<String, Value>,
         headers: Option<HashMap<&str, String>>,
         context: Option<HashMap<String, Value>>,
         api_key: Option<String>,
@@ -102,15 +104,30 @@ impl ExtractorApiHandle for YtExtractor {
         let yt_url = Url::parse(api_url.as_str())?;
 
         let http_client = reqwest::Client::new();
-        let real_headers =
-            self.generate_api_headers(Default::default(), None, None, None, Some(client))?;
-        let mut data = match context {
-            Some(ctx) => ctx,
-            None => self.select_context(None, Some(client))?,
+        let mut real_headers =
+            self.generate_api_headers(Default::default(), None, None, None, None, Some(client))?;
+        let mut data: HashMap<String, Value> = HashMap::new();
+
+        if let Some(ctx) = context {
+            data.insert(
+                "context".into(),
+                json!({
+                    "client": ctx
+                }),
+            );
+        } else {
+            data.insert(
+                "context".into(),
+                json!({
+                    "client": self.select_context(None, Some(client))?,
+                }),
+            );
         };
 
-        for (k, v) in query {
-            data.insert(k.into(), v.into());
+        data.extend(query);
+
+        if let Some(availabe_headers) = headers {
+            real_headers.extend(availabe_headers);
         }
 
         let mut request_builder = http_client
@@ -124,12 +141,6 @@ impl ExtractorApiHandle for YtExtractor {
 
         for (k, v) in real_headers {
             request_builder = request_builder.header(k, v);
-        }
-
-        if let Some(provided_headers) = headers {
-            for (key, value) in provided_headers {
-                request_builder = request_builder.header(key, value);
-            }
         }
 
         request_builder = request_builder.header("Content-Type", "application/json");

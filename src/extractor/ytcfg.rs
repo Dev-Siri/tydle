@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use crate::extractor::{
     auth::ExtractorAuthHandle,
@@ -18,7 +18,7 @@ pub trait ExtractorYtCfgHandle {
         ytcfg: Option<&HashMap<String, Value>>,
         default_client: Option<&YtClient>,
     ) -> Result<HashMap<String, Value>>;
-    fn select_visitor_data(&self, args: &HashMap<String, Value>) -> Option<String>;
+    fn select_visitor_data(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String>;
     fn select_default_ytcfg(&self, default_client: Option<&YtClient>) -> Result<InnerTubeClient>;
 }
 
@@ -35,7 +35,7 @@ impl ExtractorYtCfgHandle for YtExtractor {
 
         let innertube_client_context = innertube_client.innertube_context.get("client").unwrap();
         innertube_client_context
-            .get("clientName")
+            .get("clientVersion")
             .unwrap()
             .as_str()
             .unwrap()
@@ -49,7 +49,16 @@ impl ExtractorYtCfgHandle for YtExtractor {
         let client = default_client.unwrap_or(&DEFAULT_YT_CLIENT);
 
         let innertube_client = match ytcfg {
-            Some(cfg) => cfg,
+            Some(cfg) => {
+                if !cfg.is_empty() {
+                    cfg
+                } else {
+                    &INNERTUBE_CLIENTS
+                        .get(client)
+                        .unwrap()
+                        .to_json_val_hashmap()?
+                }
+            }
             None => &INNERTUBE_CLIENTS
                 .get(client)
                 .unwrap()
@@ -60,7 +69,7 @@ impl ExtractorYtCfgHandle for YtExtractor {
             .get("INNERTUBE_CONTEXT")
             .and_then(|v| v.get("client"))
             .cloned()
-            .unwrap_or_else(|| Value::Object(serde_json::Map::new()));
+            .unwrap_or(Value::Object(Map::new()));
 
         if let Some(map) = client_context.as_object_mut() {
             map.insert(
@@ -78,26 +87,28 @@ impl ExtractorYtCfgHandle for YtExtractor {
         }
     }
 
-    fn select_visitor_data(&self, ytcfg: &HashMap<String, Value>) -> Option<String> {
-        if let Some(v) = ytcfg.get("VISITOR_DATA").and_then(|v| v.as_str()) {
-            return Some(v.to_string());
-        }
+    fn select_visitor_data(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String> {
+        for ytcfg in ytcfgs {
+            if let Some(v) = ytcfg.get("VISITOR_DATA").and_then(|v| v.as_str()) {
+                return Some(v.to_string());
+            }
 
-        if let Some(v) = ytcfg
-            .get("INNERTUBE_CONTEXT")
-            .and_then(|v| v.get("client"))
-            .and_then(|v| v.get("visitorData"))
-            .and_then(|v| v.as_str())
-        {
-            return Some(v.to_string());
-        }
+            if let Some(v) = ytcfg
+                .get("INNERTUBE_CONTEXT")
+                .and_then(|v| v.get("client"))
+                .and_then(|v| v.get("visitorData"))
+                .and_then(|v| v.as_str())
+            {
+                return Some(v.to_string());
+            }
 
-        if let Some(v) = ytcfg
-            .get("responseContext")
-            .and_then(|v| v.get("visitorData"))
-            .and_then(|v| v.as_str())
-        {
-            return Some(v.to_string());
+            if let Some(v) = ytcfg
+                .get("responseContext")
+                .and_then(|v| v.get("visitorData"))
+                .and_then(|v| v.as_str())
+            {
+                return Some(v.to_string());
+            }
         }
 
         None

@@ -1,18 +1,26 @@
 use std::collections::HashMap;
 
 use anyhow::{Error, Result};
+use fancy_regex::Regex;
+use reqwest::Url;
 use serde_json::Value;
-use url::Url;
 
 use crate::extractor::{
     api::ExtractorApiHandle,
     client::INNERTUBE_CLIENTS,
     extract::{InfoExtractor, YtExtractor},
-    yt_interface::{VideoId, YtClient, YtEndpoint},
+    player::ExtractorPlayerHandle,
+    yt_interface::{PlayerIdentifier, VideoId, YtClient, YtEndpoint},
     ytcfg::ExtractorYtCfgHandle,
 };
 
 pub trait ExtractorDownloadHandle {
+    async fn download_direct_webpage(
+        &self,
+        webpage_url: &str,
+        webpage_client: &YtClient,
+        video_id: &VideoId,
+    ) -> Result<String>;
     async fn download_initial_data(
         &self,
         video_id: &VideoId,
@@ -20,9 +28,16 @@ pub trait ExtractorDownloadHandle {
         webpage_client: &YtClient,
         webpage_ytcfg: &HashMap<String, Value>,
     ) -> Result<HashMap<String, Value>>;
-    async fn download_initial_webpage(
+    async fn download_player_url(&self, video_id: &VideoId) -> Result<Option<String>>;
+    async fn download_webpage(
         &self,
         webpage_url: &str,
+        webpage_client: &YtClient,
+        video_id: &VideoId,
+    ) -> Result<String>;
+    async fn download_initial_webpage(
+        &self,
+        webpage_url: Url,
         webpage_client: &YtClient,
         video_id: &VideoId,
     ) -> Result<String>;
@@ -44,7 +59,8 @@ impl ExtractorDownloadHandle for YtExtractor {
 
         if initial_data.is_none() {
             let mut query = self.generate_checkok_params();
-            query.insert("videoId", video_id.as_str());
+            query.insert("videoId".into(), video_id.as_str().into());
+
             initial_data = Some(
                 self.call_api(
                     YtEndpoint::Next,
@@ -61,16 +77,56 @@ impl ExtractorDownloadHandle for YtExtractor {
         Ok(initial_data.unwrap())
     }
 
-    // ! DOES NOT YET IMPLEMENT PLAYER PARAMS
-    async fn download_initial_webpage(
+    async fn download_player_url(&self, video_id: &VideoId) -> Result<Option<String>> {
+        let formatted_url = Url::parse("https://www.youtube.com/iframe_api")?;
+        let iframe_webpage = self
+            .download_initial_webpage(formatted_url, &YtClient::Web, video_id)
+            .await?;
+
+        let player_version_re = Regex::new(r"player\\?/([0-9a-fA-F]{8})\\?/")?;
+        let player_version = player_version_re.captures(&iframe_webpage)?;
+
+        if let Some(caps) = player_version {
+            if let Some(m) = caps.get(1) {
+                return Ok(Some(self.construct_player_url(
+                    PlayerIdentifier::PlayerId(m.as_str().to_string()),
+                )?));
+            }
+        }
+
+        Ok(None)
+    }
+
+    async fn download_direct_webpage(
         &self,
         webpage_url: &str,
         webpage_client: &YtClient,
         video_id: &VideoId,
     ) -> Result<String> {
         let formatted_url = Url::parse(webpage_url)?;
-        let watch_page_url = formatted_url.join("watch")?;
-        let mut webpage_request = self.http_client.get(watch_page_url).query(&[
+        self.download_initial_webpage(formatted_url, webpage_client, video_id)
+            .await
+    }
+
+    async fn download_webpage(
+        &self,
+        webpage_url: &str,
+        webpage_client: &YtClient,
+        video_id: &VideoId,
+    ) -> Result<String> {
+        let formatted_url = Url::parse(webpage_url)?.join("watch")?;
+        self.download_initial_webpage(formatted_url, webpage_client, video_id)
+            .await
+    }
+
+    // ! DOES NOT YET IMPLEMENT PLAYER PARAMS
+    async fn download_initial_webpage(
+        &self,
+        webpage_url: Url,
+        webpage_client: &YtClient,
+        video_id: &VideoId,
+    ) -> Result<String> {
+        let mut webpage_request = self.http_client.get(webpage_url).query(&[
             ("bpctr", "9999999999"),
             ("has_verified", "1"),
             ("v", video_id.as_str()),

@@ -18,11 +18,11 @@ pub trait ExtractorAuthHandle {
     fn is_authenticated(&self) -> Result<bool>;
     fn has_auth_cookies(&self) -> Result<bool>;
     /// Extract current delegated session ID required to download private playlists of secondary channels.
-    fn get_delegated_session_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String>;
+    fn get_delegated_session_id(&self, ytcfg: &[&HashMap<String, Value>]) -> Option<String>;
     /// Extract current account dataSyncId in the format DELEGATED_SESSION_ID||USER_SESSION_ID or USER_SESSION_ID||
-    fn get_data_sync_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String>;
+    fn get_data_sync_id(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String>;
     /// Extract current user session ID.
-    fn get_user_session_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String>;
+    fn get_user_session_id(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String>;
     /// Parse `data_sync_id` into `delegated_session_id` and `user_session_id`.
     /// `data_sync_id` is of the form `"delegated_session_id||user_session_id"` for secondary channel
     /// and just `"user_session_id||"` for primary channel.
@@ -129,14 +129,16 @@ impl ExtractorAuthHandle for YtExtractor {
                 || sid_cookies.yt_3psapisid.is_some()))
     }
 
-    fn get_delegated_session_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String> {
-        for (_, v) in ytcfg {
-            if let Some(val) = self.find_key(v, "DELEGATED_SESSION_ID") {
-                return Some(val);
+    fn get_delegated_session_id(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String> {
+        for ytcfg in ytcfgs {
+            for (_, v) in *ytcfg {
+                if let Some(val) = self.find_key(v, "DELEGATED_SESSION_ID") {
+                    return Some(val);
+                }
             }
         }
 
-        match self.get_data_sync_id(ytcfg) {
+        match self.get_data_sync_id(ytcfgs) {
             Some(data_sync_id) => self.parse_data_sync_id(data_sync_id).0,
             None => None,
         }
@@ -154,35 +156,39 @@ impl ExtractorAuthHandle for YtExtractor {
         }
     }
 
-    fn get_data_sync_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String> {
-        for (_, v) in ytcfg {
-            if let Some(val) = self.find_key(v, "DATASYNC_ID") {
-                return Some(val);
+    fn get_data_sync_id(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String> {
+        for ytcfg in ytcfgs {
+            for (_, v) in *ytcfg {
+                if let Some(val) = self.find_key(v, "DATASYNC_ID") {
+                    return Some(val);
+                }
             }
-        }
 
-        for (_, v) in ytcfg {
-            if let Some(val) = v
-                .get("responseContext")
-                .and_then(|rc| rc.get("mainAppWebResponseContext"))
-                .and_then(|m| m.get("datasyncId"))
-                .and_then(|id| id.as_str())
-            {
-                return Some(val.to_string());
+            for (_, v) in *ytcfg {
+                if let Some(val) = v
+                    .get("responseContext")
+                    .and_then(|rc| rc.get("mainAppWebResponseContext"))
+                    .and_then(|m| m.get("datasyncId"))
+                    .and_then(|id| id.as_str())
+                {
+                    return Some(val.to_string());
+                }
             }
         }
 
         None
     }
 
-    fn get_user_session_id(&self, ytcfg: &HashMap<String, Value>) -> Option<String> {
-        for (_, v) in ytcfg {
-            if let Some(val) = self.find_key(v, "USER_SESSION_ID") {
-                return Some(val);
+    fn get_user_session_id(&self, ytcfgs: &[&HashMap<String, Value>]) -> Option<String> {
+        for ytcfg in ytcfgs {
+            for (_, v) in *ytcfg {
+                if let Some(val) = self.find_key(v, "USER_SESSION_ID") {
+                    return Some(val);
+                }
             }
         }
 
-        match self.get_data_sync_id(ytcfg) {
+        match self.get_data_sync_id(ytcfgs) {
             Some(data_sync_id) => self.parse_data_sync_id(data_sync_id).1,
             None => None,
         }
@@ -217,7 +223,7 @@ impl ExtractorAuthHandle for YtExtractor {
         let mut delegated_sess_id = delegated_session_id;
 
         if delegated_sess_id.is_none() {
-            delegated_sess_id = self.get_delegated_session_id(&ytcfg);
+            delegated_sess_id = self.get_delegated_session_id(&[&ytcfg]);
         }
 
         if let Some(delegated_s_id) = delegated_sess_id.clone() {
@@ -238,7 +244,7 @@ impl ExtractorAuthHandle for YtExtractor {
 
         let user_sess_id = match user_session_id {
             Some(user_s_id) => Some(user_s_id),
-            None => self.get_user_session_id(&ytcfg),
+            None => self.get_user_session_id(&[&ytcfg]),
         };
 
         if let Some(auth) = self.get_sid_authorization_header(Some(origin.clone()), user_sess_id)? {

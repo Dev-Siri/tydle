@@ -10,15 +10,20 @@ use crate::extractor::{
 };
 
 mod extractor;
+mod ty;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let extractor = YtExtractor::new()?;
+    let mut extractor = YtExtractor::new()?;
     let video_id = VideoId::new("UWn9RdueB7E")?;
 
-    extractor
+    match extractor
         .initial_extract(YT_URL, HashMap::new(), YT_URL, &YtClient::Web, &video_id)
-        .await?;
+        .await
+    {
+        Ok(_) => (),
+        Err(e) => println!("Error during extraction: {:#?}", e.backtrace()),
+    };
 
     Ok(())
 }

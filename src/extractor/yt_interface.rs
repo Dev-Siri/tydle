@@ -2,6 +2,7 @@ use core::fmt;
 use std::str::FromStr;
 
 use anyhow::{Result, anyhow};
+use serde_json::Value;
 
 #[derive(Debug)]
 pub enum YtEndpoint {
@@ -89,6 +90,42 @@ pub const STREAMING_DATA_PLAYER_TOKEN_PROVIDED: &str = "__yt_dlp_player_token_pr
 pub const STREAMING_DATA_INNERTUBE_CONTEXT: &str = "__yt_dlp_innertube_context";
 pub const STREAMING_DATA_IS_PREMIUM_SUBSCRIBER: &str = "__yt_dlp_is_premium_subscriber";
 pub const STREAMING_DATA_FETCHED_TIMESTAMP: &str = "__yt_dlp_fetched_timestamp";
+pub const DEFAULT_PLAYER_JS_VERSION: &str = "actual";
+pub const DEFAULT_PLAYER_JS_VARIANT: &str = "main";
+
+pub const PLAYER_JS_MAIN_VARIANT: &str = "player_ias.vflset/en_US/base.js";
+pub const PLAYER_JS_INVERSE_MAIN_VARIANT: &str = "main";
+
+// pub static PLAYER_JS_VARIANT_MAP: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+//     let mut m = HashMap::new();
+
+//     m.insert("main", "player_ias.vflset/en_US/base.js");
+//     m.insert("tcc", "player_ias_tcc.vflset/en_US/base.js");
+//     m.insert("tce", "player_ias_tce.vflset/en_US/base.js");
+//     m.insert("es5", "player_es5.vflset/en_US/base.js");
+//     m.insert("es6", "player_es6.vflset/en_US/base.js");
+//     m.insert("tv", "tv-player-ias.vflset/tv-player-ias.js");
+//     m.insert("tv_es6", "tv-player-es6.vflset/tv-player-es6.js");
+//     m.insert("phone", "player-plasma-ias-phone-en_US.vflset/base.js");
+//     m.insert("tablet", "player-plasma-ias-tablet-en_US.vflset/base.js");
+
+//     m
+// });
+
+// pub static INVERSE_PLAYER_JS_VARIANT_MAP: Lazy<HashMap<&str, &str>> = Lazy::new(|| {
+//     let mut m = HashMap::new();
+
+//     for (k, v) in PLAYER_JS_VARIANT_MAP.iter() {
+//         m.insert(*v, *k);
+//     }
+
+//     m
+// });
+
+pub enum PlayerIdentifier {
+    PlayerId(String),
+    PlayerUrl(String),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct VideoId(String);
@@ -118,7 +155,12 @@ impl VideoId {
     }
 }
 
-// Optional: allow parsing from string literals
+impl From<VideoId> for Value {
+    fn from(value: VideoId) -> Self {
+        Value::String(value.0)
+    }
+}
+
 impl FromStr for VideoId {
     type Err = anyhow::Error;
 
@@ -127,7 +169,6 @@ impl FromStr for VideoId {
     }
 }
 
-// Optional: pretty print
 impl fmt::Display for VideoId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
