@@ -4,7 +4,10 @@ use std::{
 };
 
 use anyhow::Result;
+// #[cfg(not(target_arch = "wasm32"))]
 use reqwest::{Url, cookie::CookieStore};
+// #[cfg(target_arch = "wasm32")]
+// use reqwest::{Url, header::HeaderValue};
 use sha1::{Digest, Sha1};
 
 use crate::{extractor::extract::YtExtractor, yt_interface::YT_URL};
@@ -50,8 +53,12 @@ pub trait ExtractorCookieHandle {
 
 impl ExtractorCookieHandle for YtExtractor {
     fn get_cookies(&self, url: &str) -> Result<HashMap<String, String>> {
+        // #[cfg(not(target_arch = "wasm32"))]
         let url = Url::parse(url)?;
+        // #[cfg(not(target_arch = "wasm32"))]
         let cookies = self.cookie_jar.cookies(&url);
+        // #[cfg(target_arch = "wasm32")]
+        // let cookies: Option<HeaderValue> = None;
         let cookies_str = match cookies {
             Some(cookie_val) => cookie_val.to_str()?.to_owned(),
             None => String::new(),

@@ -66,6 +66,7 @@ impl ExtractorAuthHandle for YtExtractor {
             }
         }
 
+        // #[cfg(not(target_arch = "wasm32"))]
         self.cookie_jar
             .add_cookie_str("SOCS=CAI", &Url::parse(YT_URL)?);
         Ok(())
@@ -86,6 +87,8 @@ impl ExtractorAuthHandle for YtExtractor {
         pref.insert("tz".into(), "UTC".into());
 
         let pref_qs = convert_to_query_string(&pref);
+
+        // #[cfg(not(target_arch = "wasm32"))]
         self.cookie_jar
             .add_cookie_str(format!("PREF={}", pref_qs).as_str(), &Url::parse(YT_URL)?);
 

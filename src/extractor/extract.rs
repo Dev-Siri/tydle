@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use fancy_regex::Regex;
+// #[cfg(not(target_arch = "wasm32"))]
 use reqwest::cookie;
 use serde_json::Value;
 
@@ -19,6 +20,7 @@ use crate::{
 pub struct YtExtractor {
     pub passed_auth_cookies: Cell<bool>,
     pub http_client: reqwest::Client,
+    // #[cfg(not(target_arch = "wasm32"))]
     pub cookie_jar: cookie::Jar,
     pub code_cache: HashMap<String, String>,
     pub player_cache: HashMap<(String, String), String>,
@@ -48,6 +50,7 @@ impl YtExtractor {
         let extractor = Self {
             passed_auth_cookies: Cell::new(false),
             http_client: reqwest::Client::new(),
+            // #[cfg(not(target_arch = "wasm32"))]
             cookie_jar: cookie::Jar::default(),
             code_cache: HashMap::new(),
             player_cache: HashMap::new(),
