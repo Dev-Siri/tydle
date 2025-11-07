@@ -26,21 +26,12 @@ pub struct YtExtractor {
     pub player_cache: HashMap<(String, String), String>,
 }
 
-// pub struct InitialExtractInfo {
-//     pub webpage: String,
-//     pub webpage_ytcfg: HashMap<String, Value>,
-//     pub initial_data: HashMap<String, Value>,
-//     pub is_premium_subscriber: bool,
-//     pub player_responses: Vec<HashMap<String, Value>>,
-//     pub player_url: Option<String>,
-// }
-
 pub trait InfoExtractor {
     fn extract_formats(
         &self,
         player_responses: Vec<HashMap<String, Value>>,
     ) -> Result<Vec<YtStream>>;
-    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<()>;
+    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<Vec<YtStream>>;
     fn generate_checkok_params(&self) -> HashMap<String, Value>;
     fn is_premium_subscriber(&self, initial_data: &HashMap<String, Value>) -> Result<bool>;
     fn extract_ytcfg(&self, webpage_content: String) -> Result<HashMap<String, Value>>;
@@ -316,7 +307,7 @@ impl InfoExtractor for YtExtractor {
         Ok(player_responses)
     }
 
-    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<()> {
+    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<Vec<YtStream>> {
         // yt-dlp snippet: self.http_scheme() + "://"
         let webpage_url = "https://www.youtube.com/watch";
         let initial_extracted_data = self
@@ -325,8 +316,6 @@ impl InfoExtractor for YtExtractor {
 
         let formats = self.extract_formats(initial_extracted_data)?;
 
-        println!("{:#?}", formats);
-
-        Ok(())
+        Ok(formats)
     }
 }
