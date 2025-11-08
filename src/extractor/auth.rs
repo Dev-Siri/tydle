@@ -5,12 +5,8 @@ use serde_json::Value;
 
 use crate::{
     cookies::CookieStore,
-    extractor::{
-        cookies::ExtractorCookieHandle,
-        extract::YtExtractor,
-        json::ExtractorJsonHandle,
-        utils::{convert_to_query_string, parse_query_string},
-    },
+    extractor::{cookies::ExtractorCookieHandle, extract::YtExtractor, json::ExtractorJsonHandle},
+    utils::{convert_to_query_string, parse_query_string},
     yt_interface::{PREFERRED_LOCALE, YT_URL},
 };
 
