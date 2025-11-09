@@ -38,8 +38,8 @@ pub trait Extract {
     type DecipherFut<'a>: Future<Output = Result<String>> + 'a
     where
         Self: 'a;
-
-    fn decipher_stream_signature<'a>(
+    /// Deciphers a stream's signature and returns it's URL.
+    fn decipher_signature<'a>(
         &'a self,
         signature: String,
         player_url: String,
@@ -65,7 +65,7 @@ impl Extract for Ty {
         })
     }
 
-    fn decipher_stream_signature<'a>(
+    fn decipher_signature<'a>(
         &'a self,
         signature: String,
         player_url: String,

@@ -79,9 +79,20 @@ impl YtClient {
     }
 }
 
-pub const DEFAULT_YT_CLIENT: YtClient = YtClient::Web;
-pub const PREFERRED_LOCALE: &str = "en";
-pub const YT_URL: &str = "https://www.youtube.com";
+pub(crate) const DEFAULT_YT_CLIENT: YtClient = YtClient::Web;
+pub(crate) const PREFERRED_LOCALE: &str = "en";
+pub(crate) const YT_URL: &str = "https://www.youtube.com";
+
+pub const AUDIO_ONLY_FORMATS: [&str; 4] = [
+    "audio_quality_ultralow",
+    "audio_quality_low",
+    "audio_quality_medium",
+    "audio_quality_high",
+];
+
+pub const VIDEO_ONLY_FORMATS: [&str; 10] = [
+    "tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "hd2880", "highres",
+];
 
 // pub const STREAMING_DATA_CLIENT_NAME: &str = "__yt_dlp_client";
 // pub const STREAMING_DATA_FETCH_SUBS_PO_TOKEN: &str = "__yt_dlp_fetch_subs_po_token";
@@ -175,7 +186,7 @@ impl fmt::Display for VideoId {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum YtStreamSource {
     URL(String),
     Signature(String),
@@ -211,16 +222,174 @@ impl YtStream {
     }
 }
 
+pub type YtStreams = Vec<YtStream>;
+
+pub struct YtStreamList(YtStreams);
+
+pub trait Filterable {
+    /// Filter to return video-only streams.
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get the stream with the lowest bitrate.
+    ///   let video_only = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .video_only();
+    /// }
+    /// ```
+    fn video_only(&self) -> YtStreamList;
+    /// Filter to return audio-only streams.
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get the stream with the lowest bitrate.
+    ///   let audio_only = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .audio_only();
+    /// }
+    /// ```
+    fn audio_only(&self) -> YtStreamList;
+    /// Filter to return only those streams which do not require signature deciphering.
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get the stream with the lowest bitrate.
+    ///   let lowest_br_stream = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .with_lowest_bitrate()
+    ///      .first();
+    /// }
+    /// ```
+    fn with_lowest_bitrate(&self) -> YtStreamList;
+    /// Sort streams to highest bitrate first.
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get the stream with the highest bitrate.
+    ///   let highest_br_stream = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .with_highest_bitrate()
+    ///      .first();
+    /// }
+    /// ```
+    fn with_highest_bitrate(&self) -> YtStreamList;
+    /// Filter to return only those streams which require signature deciphering.
+    /// For the purpose of signature deciphering, use `Ty::decipher_signature`
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get direct URL streams.
+    ///   let signature_streams = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .only_signatures()
+    /// }
+    /// ```
+    fn only_signatures(&self) -> YtStreamList;
+    /// Filter streams to return only those which do not require signature deciphering.
+    ///
+    /// ```
+    /// #[tokio::main]
+    /// async fn main() -> Result<()> {
+    ///   let ty = Ty::new();
+    ///   // Get direct URL streams.
+    ///   let url_streams = ty
+    ///      .fetch_streams(&VideoId::new("dQw4w9WgXcQ")?)
+    ///      .only_urls()
+    /// }
+    /// ```
+    fn only_urls(&self) -> YtStreamList;
+}
+
+impl Filterable for YtStreamList {
+    fn with_highest_bitrate(&self) -> YtStreamList {
+        let mut streams = self.0.clone();
+        streams.sort_by(|a, b| {
+            b.tbr
+                .partial_cmp(&a.tbr)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        YtStreamList(streams)
+    }
+
+    fn audio_only(&self) -> YtStreamList {
+        let streams = self.0.clone();
+        YtStreamList(
+            streams
+                .iter()
+                .filter(|s| {
+                    AUDIO_ONLY_FORMATS.contains(&s.quality.clone().unwrap_or_default().as_str())
+                })
+                .cloned()
+                .collect(),
+        )
+    }
+
+    fn video_only(&self) -> YtStreamList {
+        let streams = self.0.clone();
+        YtStreamList(
+            streams
+                .iter()
+                .filter(|s| {
+                    VIDEO_ONLY_FORMATS.contains(&s.quality.clone().unwrap_or_default().as_str())
+                })
+                .cloned()
+                .collect(),
+        )
+    }
+
+    fn with_lowest_bitrate(&self) -> YtStreamList {
+        let mut streams = self.0.clone();
+        streams.sort_by(|a, b| {
+            a.tbr
+                .partial_cmp(&b.tbr)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        YtStreamList(streams)
+    }
+
+    fn only_urls(&self) -> YtStreamList {
+        YtStreamList(
+            self.0
+                .iter()
+                .filter(|s| matches!(s.source, YtStreamSource::URL(_)))
+                .cloned()
+                .collect(),
+        )
+    }
+
+    fn only_signatures(&self) -> YtStreamList {
+        YtStreamList(
+            self.0
+                .iter()
+                .filter(|s| matches!(s.source, YtStreamSource::Signature(_)))
+                .cloned()
+                .collect(),
+        )
+    }
+}
+
 pub struct YtStreamResponse {
     pub player_url: String,
-    pub streams: Vec<YtStream>,
+    pub streams: YtStreamList,
 }
 
 impl YtStreamResponse {
-    pub fn new(player_url: String, streams: Vec<YtStream>) -> Self {
+    pub fn new(player_url: String, streams: YtStreams) -> Self {
         Self {
             player_url,
-            streams,
+            streams: YtStreamList(streams),
         }
     }
 }

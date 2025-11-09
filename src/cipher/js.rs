@@ -59,6 +59,7 @@ impl SignatureJsHandle for SignatureDecipher {
         Ok((lib_code, core_code))
     }
 
+    // Taken from `youtube_explode_dart`'s implementation with `yt-dlp`'s ejs cipher library.
     // See: https://github.com/Hexer10/youtube_explode_dart/blob/a993b3d463713b0aabd945f07a7e6a1635bcf1e7/lib/src/reverse_engineering/challenges/ejs/ejs.dart
     async fn parse_signature_js(
         &self,

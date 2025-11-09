@@ -223,7 +223,7 @@ impl InfoExtractor for YtExtractor {
 
                 let mut quality = fmt
                     .get("quality")
-                    .and_then(|s| Some(s.as_str().unwrap_or_default().to_string()));
+                    .and_then(|s| Some(s.as_str().unwrap_or_default().to_string().to_lowercase()));
 
                 if quality.clone().unwrap_or_default() == "tiny" || quality.is_none() {
                     let audio_quality = fmt
@@ -231,7 +231,8 @@ impl InfoExtractor for YtExtractor {
                         .unwrap_or_default()
                         .as_str()
                         .unwrap_or_default()
-                        .to_string();
+                        .to_string()
+                        .to_lowercase();
                     quality = Some(audio_quality);
                 }
 
