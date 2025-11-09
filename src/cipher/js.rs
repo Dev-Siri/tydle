@@ -4,11 +4,19 @@ use anyhow::{Result, bail};
 use deno_core::JsRuntime;
 use serde_json::json;
 
-use crate::{cache::CacheAccess, cipher::decipher::SignatureDecipher};
+use crate::{
+    cache::CacheAccess,
+    cipher::decipher::{SignatureDecipher, SignatureType},
+};
 
 pub trait SignatureJsHandle {
     async fn get_js_modules(&self) -> Result<(String, String)>;
-    async fn parse_signature_js(&self, code: String, example_sig: String) -> Result<String>;
+    async fn parse_signature_js(
+        &self,
+        code: String,
+        example_sig: String,
+        signature_type: SignatureType,
+    ) -> Result<String>;
 }
 
 impl SignatureJsHandle for SignatureDecipher {
@@ -52,7 +60,12 @@ impl SignatureJsHandle for SignatureDecipher {
     }
 
     // See: https://github.com/Hexer10/youtube_explode_dart/blob/a993b3d463713b0aabd945f07a7e6a1635bcf1e7/lib/src/reverse_engineering/challenges/ejs/ejs.dart
-    async fn parse_signature_js(&self, code: String, example_sig: String) -> Result<String> {
+    async fn parse_signature_js(
+        &self,
+        code: String,
+        example_sig: String,
+        signature_type: SignatureType,
+    ) -> Result<String> {
         let (lib_code, core_code) = self.get_js_modules().await?;
 
         let js_env = format!(
@@ -67,7 +80,7 @@ impl SignatureJsHandle for SignatureDecipher {
         let input = json!({
             "type": "player",
             "player": code,
-            "requests": [{"type": "sig", "challenges": [example_sig]}],
+            "requests": [{"type": signature_type.as_str(), "challenges": [example_sig]}],
             "output_preprocessed": true
         });
 
