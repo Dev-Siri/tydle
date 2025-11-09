@@ -1,5 +1,5 @@
 use core::fmt;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use anyhow::{Result, anyhow};
 use serde_json::Value;
@@ -224,6 +224,7 @@ impl YtStream {
 
 pub type YtStreams = Vec<YtStream>;
 
+#[derive(Debug)]
 pub struct YtStreamList(YtStreams);
 
 pub trait Filterable {
@@ -380,6 +381,7 @@ impl Filterable for YtStreamList {
     }
 }
 
+#[derive(Debug)]
 pub struct YtStreamResponse {
     pub player_url: String,
     pub streams: YtStreamList,
@@ -393,3 +395,21 @@ impl YtStreamResponse {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct YtManifest {
+    pub extracted_manifest: Vec<HashMap<String, Value>>,
+    pub player_url: String,
+}
+
+impl YtManifest {
+    pub fn new(extracted_manifest: Vec<HashMap<String, Value>>, player_url: String) -> Self {
+        Self {
+            extracted_manifest,
+            player_url,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct YtVideoInfo {}

@@ -14,7 +14,9 @@ use crate::{
         auth::ExtractorAuthHandle, client::INNERTUBE_CLIENTS, download::ExtractorDownloadHandle,
         json::ExtractorJsonHandle, player::ExtractorPlayerHandle, ytcfg::ExtractorYtCfgHandle,
     },
-    yt_interface::{VideoId, YtClient, YtStream, YtStreamResponse, YtStreamSource},
+    yt_interface::{
+        VideoId, YtClient, YtManifest, YtStream, YtStreamResponse, YtStreamSource, YtVideoInfo,
+    },
 };
 
 pub struct YtExtractor {
@@ -26,6 +28,16 @@ pub struct YtExtractor {
 }
 
 pub trait InfoExtractor {
+    fn extract_metadata(
+        &self,
+        player_responses: Vec<HashMap<String, Value>>,
+    ) -> Result<YtVideoInfo>;
+    async fn extract_video_info(&mut self, video_id: &VideoId) -> Result<YtVideoInfo>;
+    async fn extract_streams_from_manifest(
+        &self,
+        manifest: &YtManifest,
+    ) -> Result<YtStreamResponse>;
+    async fn extract_manifest(&mut self, video_id: &VideoId) -> Result<YtManifest>;
     fn extract_formats(
         &self,
         player_responses: Vec<HashMap<String, Value>>,
@@ -36,7 +48,7 @@ pub trait InfoExtractor {
     fn extract_ytcfg(&self, webpage_content: String) -> Result<HashMap<String, Value>>;
     fn extract_yt_initial_data(&self, webpage_content: &String) -> Result<HashMap<String, Value>>;
     fn get_clients(&self, is_premium_subscriber: bool) -> Result<Vec<YtClient>>;
-    async fn initial_extract(
+    async fn extract(
         &mut self,
         webpage_url: &str,
         webpage_client: &YtClient,
@@ -280,7 +292,16 @@ impl InfoExtractor for YtExtractor {
         Ok(streams)
     }
 
-    async fn initial_extract(
+    fn extract_metadata(
+        &self,
+        player_responses: Vec<HashMap<String, Value>>,
+    ) -> Result<YtVideoInfo> {
+        for player_response in player_responses {}
+
+        Ok(YtVideoInfo {})
+    }
+
+    async fn extract(
         &mut self,
         webpage_url: &str,
         webpage_client: &YtClient,
@@ -310,16 +331,36 @@ impl InfoExtractor for YtExtractor {
         Ok(player_responses)
     }
 
-    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<YtStreamResponse> {
+    async fn extract_manifest(&mut self, video_id: &VideoId) -> Result<YtManifest> {
         // yt-dlp snippet: self.http_scheme() + "://"
         let webpage_url = "https://www.youtube.com/watch";
-        let (initial_extracted_data, player_url) = self
-            .initial_extract(webpage_url, &YtClient::Web, video_id)
-            .await?;
+        let (initial_extracted_data, player_url) =
+            self.extract(webpage_url, &YtClient::Web, video_id).await?;
 
-        let formats = self.extract_formats(initial_extracted_data)?;
-        let stream_response = YtStreamResponse::new(player_url, formats);
+        Ok(YtManifest::new(initial_extracted_data, player_url))
+    }
+
+    async fn extract_streams(&mut self, video_id: &VideoId) -> Result<YtStreamResponse> {
+        let yt_manifest = self.extract_manifest(video_id).await?;
+
+        let formats = self.extract_formats(yt_manifest.extracted_manifest)?;
+        let stream_response = YtStreamResponse::new(yt_manifest.player_url, formats);
 
         Ok(stream_response)
+    }
+
+    async fn extract_streams_from_manifest(
+        &self,
+        manifest: &YtManifest,
+    ) -> Result<YtStreamResponse> {
+        let formats = self.extract_formats(manifest.extracted_manifest.clone())?;
+        Ok(YtStreamResponse::new(manifest.player_url.clone(), formats))
+    }
+
+    async fn extract_video_info(&mut self, video_id: &VideoId) -> Result<YtVideoInfo> {
+        let yt_manifest = self.extract_manifest(video_id).await?;
+
+        let yt_video_info = self.extract_metadata(yt_manifest.extracted_manifest)?;
+        Ok(yt_video_info)
     }
 }
