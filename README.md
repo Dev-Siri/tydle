@@ -9,7 +9,7 @@ The purpose of `tydle` is not to be used as a CLI application or just as a Rust 
 Require the crate in your `Cargo.toml` file:
 
 ```toml
-ty = "0.1.0"
+tydle = "0.1.0"
 ```
 
 Then use the crate in your Rust code:
