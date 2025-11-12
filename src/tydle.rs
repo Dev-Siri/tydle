@@ -167,15 +167,6 @@ pub trait Extract {
     /// ```
     fn get_streams<'a>(&'a self, video_id: &'a VideoId) -> Self::ExtractStreamFut<'a>;
 
-    /// Deciphers a stream's signature and returns it's URL.
-    fn decipher_signature<'a>(
-        &'a self,
-        signature: String,
-        player_url: String,
-    ) -> Self::DecipherFut<'a>;
-    type DecipherFut<'a>: Future<Output = Result<String>> + 'a
-    where
-        Self: 'a;
     type ExtractStreamFut<'a>: Future<Output = Result<YtStreamResponse>> + 'a
     where
         Self: 'a;
@@ -187,9 +178,20 @@ pub trait Extract {
         Self: 'a;
 }
 
+pub trait Cipher {
+    /// Deciphers a stream's signature and returns it's URL.
+    fn decipher_signature<'a>(
+        &'a self,
+        signature: String,
+        player_url: String,
+    ) -> Self::DecipherFut<'a>;
+    type DecipherFut<'a>: Future<Output = Result<String>> + 'a
+    where
+        Self: 'a;
+}
+
 impl Extract for Tydle {
     type ExtractStreamFut<'a> = Pin<Box<dyn Future<Output = Result<YtStreamResponse>> + 'a>>;
-    type DecipherFut<'a> = Pin<Box<dyn Future<Output = Result<String>> + 'a>>;
     type ExtractInfoFut<'a> = Pin<Box<dyn Future<Output = Result<YtVideoInfo>> + 'a>>;
     type ExtractManifestFut<'a> = Pin<Box<dyn Future<Output = Result<YtManifest>> + 'a>>;
 
@@ -248,6 +250,10 @@ impl Extract for Tydle {
             extractor.extract_video_info_from_manifest(manifest).await
         })
     }
+}
+
+impl Cipher for Tydle {
+    type DecipherFut<'a> = Pin<Box<dyn Future<Output = Result<String>> + 'a>>;
 
     fn decipher_signature<'a>(
         &'a self,
