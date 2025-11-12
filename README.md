@@ -82,7 +82,7 @@ Since this library is focused for execution on client environments, you might be
 
 The library can't work around this issue, even with a proxy option because then the streams fetched won't even be useful to you, as they are only available to the client that fetched it, which in the case of a proxy would be the proxy server and not the browser that's running `tydle`. Considering that extracted streams on the client being directly accessible from the client is a core focus of the library, it's useless if the browser imposes a restriction.
 
-However, to make up for this, you can probably create a serverless function with the help of the WASM build. Since serverless functions (like on Vercel) can run WebAssembly (p) and produce a reasonable response time, you could probably do something similar as shown below: (This example is using SvelteKit.)
+However, to make up for this, you can probably create a serverless function with the help of the WASM build. Since serverless functions (like on Vercel) can run WebAssembly and produce a reasonable response time, you could probably do something similar as shown below: (This example is using SvelteKit.)
 
 ```ts
 import { error } from "@sveltejs/kit";
