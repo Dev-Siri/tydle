@@ -348,6 +348,11 @@ impl ExtractorPlayerHandle for YtExtractor {
             let client = popped_client.as_str();
             let variant = popped_client.get_variant();
 
+            log::info!(
+                "Extracting player response from \"{}\" client's manifest.",
+                client
+            );
+
             let player_ytcfg: &HashMap<String, Value> = if client == webpage_client.as_str() {
                 webpage_ytcfg
             } else {
@@ -427,8 +432,8 @@ impl ExtractorPlayerHandle for YtExtractor {
                 .await?;
 
             if let Some(invalid_pr_id) = self.invalid_player_response(&player_response, video_id) {
-                println!(
-                    "[WARN] Skipped {}. Received invalid player response for video with ID \"{}\", got {} instead.",
+                log::warn!(
+                    "Skipped {}. Received invalid player response for video with ID \"{}\", got {} instead.",
                     client,
                     video_id.as_str(),
                     invalid_pr_id
@@ -447,8 +452,8 @@ impl ExtractorPlayerHandle for YtExtractor {
 
             // Unauthenticated users will only get web_embedded client formats if age-gated.
             if self.is_age_gated(&player_response) && !self.is_authenticated()? {
-                println!(
-                    "[WARN] Skipping client \"{}\" since the video is age-restricted and unavailable without authentication.",
+                log::warn!(
+                    "Skipping client \"{}\" since the video is age-restricted and unavailable without authentication.",
                     client
                 );
                 continue;
@@ -460,8 +465,8 @@ impl ExtractorPlayerHandle for YtExtractor {
             if self.is_authenticated()?
                 && (self.is_age_gated(&player_response) || embedding_is_disabled)
             {
-                println!(
-                    "[WARN] Skipping client \"{}\" since the video is age-restricted and YouTube is requiring account verification.",
+                log::warn!(
+                    "Skipping client \"{}\" since the video is age-restricted and YouTube is requiring account verification.",
                     client
                 );
                 actual_clients.push(YtClient::TvEmbedded);

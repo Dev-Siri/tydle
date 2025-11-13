@@ -16,6 +16,10 @@ edition = "2024"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = []
+logging = ["dep:log", "dep:env_logger"]
+
 [dependencies]
 anyhow = "1.0.100"
 fancy-regex = "0.16.2"
@@ -27,10 +31,12 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 sha1 = "0.10.6"
 url = "2.5.7"
+log = { version = "0.4", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "1", features = ["full"] }
 deno_core = "0.311.0"
+env_logger = { version = "0.11", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"

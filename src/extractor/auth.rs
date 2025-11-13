@@ -44,6 +44,7 @@ impl ExtractorAuthHandle for YtExtractor {
         self.passed_auth_cookies.store(false, Ordering::Relaxed);
         if self.has_auth_cookies()? {
             self.passed_auth_cookies.store(true, Ordering::Relaxed);
+            log::info!("Found YouTube account cookies.");
         }
 
         Ok(())

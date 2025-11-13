@@ -185,8 +185,8 @@ impl InfoExtractor for YtExtractor {
             }
 
             for client in &unsupported_clients {
-                println!(
-                    "[WARN] Skipping client \"{}\" since it does not support cookies.",
+                log::warn!(
+                    "Skipping client \"{}\" since it does not support cookies.",
                     client.as_str()
                 );
 
@@ -232,6 +232,7 @@ impl InfoExtractor for YtExtractor {
 
                 // Skip livestream.
                 if target_duration_sec.is_some() {
+                    log::info!("Skipped a found livestream because livestreams are not supported.");
                     continue;
                 }
 
