@@ -1,5 +1,7 @@
 # tydle
 
+[![Crates.io](https://img.shields.io/crates/v/tydle.svg)](https://crates.io/crates/tydle)
+
 `tydle` is an extremely small subset of `yt-dlp`, written entirely in Rust. Unlike `yt-dlp` and all the video-downloaders based around or on it, `tydle` is meant to be minimal and provide a developer-facing API. It provides a heavily modular approach to extract video metadata, streams or the raw manifest from YouTube and a separate module for deciphering signatures.
 
 The purpose of `tydle` is not to be used as a CLI application or just as a Rust library, but to be ran on any platform, focused primarily on the client. It can be used in web-based projects through WebAssembly to run it on serverless functions and in other languages, like Go or Swift, with its FFI bindings.
