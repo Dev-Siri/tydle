@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
 Since `tydle` also compiles to WebAssembly, you can easily use it from TypeScript as well. Here's a simple example using TypeScript:
 
 ```ts
-import { Tydle } from "tydle";
+import { Tydle } from "@wvlen/tydle";
 
 const tydle = new Tydle();
 
@@ -102,7 +102,7 @@ However, to make up for this, you can probably create a serverless function with
 
 ```ts
 import { error } from "@sveltejs/kit";
-import { Tydle } from "tydle";
+import { Tydle } from "@wvlen/tydle";
 
 export async function GET({ params: { videoId } }) {
   try {
@@ -168,7 +168,7 @@ $ cargo install wasm-pack
 After which, you can build with `wasm-pack` for target `wasm32-unknown-unknown` with an environment:
 
 ```sh
-$ wasm-pack build --target nodejs
+$ wasm-pack build --target nodejs --out-name tydle --scope wvlen --out-dir pkg --release
 ```
 
 ## Credits
