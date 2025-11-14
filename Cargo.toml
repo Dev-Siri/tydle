@@ -1,7 +1,7 @@
 [package]
 name = "tydle"
 description = "YouTube video extractor written in Rust that can be used anywhere in web or native environments, based on an extremely small subset of yt-dlp."
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Dev-Siri"]
 license = "MIT"
 repository = "https://github.com/Dev-Siri/tydle"
