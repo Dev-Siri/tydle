@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use maplit::hashmap;
 use reqwest::Url;
 use serde_json::{Value, json};
 
@@ -48,19 +49,12 @@ impl ExtractorApiHandle for YtExtractor {
         let host_name = self.select_api_hostname(Some(client));
 
         let origin = format!("https://{}", host_name);
-        let mut headers = HashMap::new();
 
-        headers.insert(
-            "X-YouTube-Client-Name",
-            innertube_client.innertube_context_client_name.to_string(),
-        );
-
-        headers.insert(
-            "X-YouTube-Client-Version",
-            self.select_client_version(Some(client)).to_string(),
-        );
-
-        headers.insert("Origin", origin.clone());
+        let mut headers = hashmap! {
+            "X-YouTube-Client-Name" => innertube_client.innertube_context_client_name.to_string(),
+            "X-YouTube-Client-Version" => self.select_client_version(Some(client)).to_string(),
+            "Origin" => origin.clone(),
+        };
 
         if let Some(available_visitor_id) = visitor_id {
             headers.insert("X-Goog-Visitor-Id", available_visitor_id);

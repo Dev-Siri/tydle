@@ -1,4 +1,5 @@
 use anyhow::Result;
+use maplit::hashmap;
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use serde_json::Value;
@@ -66,14 +67,14 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
 
     let mut m = HashMap::new();
 
-    let mut web_context = HashMap::new();
-    let mut web_context_client: HashMap<&str, Value> = HashMap::new();
+    let web_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "WEB".into(),
+            "clientVersion" => "2.20250925.01.00".into(),
+            "hl" => PREFERRED_LOCALE.into()
+        }
+    };
 
-    web_context_client.insert("clientName", "WEB".into());
-    web_context_client.insert("clientVersion", "2.20250925.01.00".into());
-    web_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    web_context.insert("client", web_context_client);
     m.insert(
         YtClient::Web,
         InnerTubeClient {
@@ -91,15 +92,15 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut web_safari_context = HashMap::new();
-    let mut web_safari_context_client: HashMap<&str, Value> = HashMap::new();
+    let web_safari_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "WEB".into(),
+            "clientVersion" => "2.20250925.01.00".into(),
+            "userAgent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)".into(),
+            "hl" => PREFERRED_LOCALE.into()
+        },
+    };
 
-    web_safari_context_client.insert("clientName", "WEB".into());
-    web_safari_context_client.insert("clientVersion", "2.20250925.01.00".into());
-    web_safari_context_client.insert("userAgent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)".into());
-    web_safari_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    web_safari_context.insert("client", web_safari_context_client);
     m.insert(
         YtClient::WebSafari,
         InnerTubeClient {
@@ -117,14 +118,14 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut web_embedded_context = HashMap::new();
-    let mut web_embedded_context_client: HashMap<&str, Value> = HashMap::new();
+    let web_embedded_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "WEB_EMBEDDED_PLAYER".into(),
+            "clientVersion" => "1.20250923.21.00".into(),
+            "hl" => PREFERRED_LOCALE.into()
+        }
+    };
 
-    web_embedded_context_client.insert("clientName", "WEB_EMBEDDED_PLAYER".into());
-    web_embedded_context_client.insert("clientVersion", "1.20250923.21.00".into());
-    web_embedded_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    web_embedded_context.insert("client", web_embedded_context_client);
     m.insert(
         YtClient::WebEmbedded,
         InnerTubeClient {
@@ -142,14 +143,14 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut web_music_context = HashMap::new();
-    let mut web_music_context_client: HashMap<&str, Value> = HashMap::new();
+    let web_music_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "WEB_REMIX".into(),
+            "clientVersion" => "1.20250922.03.00".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    web_music_context_client.insert("clientName", "WEB_REMIX".into());
-    web_music_context_client.insert("clientVersion", "1.20250922.03.00".into());
-    web_music_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    web_music_context.insert("client", web_music_context_client);
     m.insert(
         YtClient::WebMusic,
         InnerTubeClient {
@@ -167,14 +168,14 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut web_creator_context = HashMap::new();
-    let mut web_creator_context_client: HashMap<&str, Value> = HashMap::new();
+    let web_creator_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "WEB_CREATOR".into(),
+            "clientVersion" => "1.20250922.03.00".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    web_creator_context_client.insert("clientName", "WEB_CREATOR".into());
-    web_creator_context_client.insert("clientVersion", "1.20250922.03.00".into());
-    web_creator_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    web_creator_context.insert("client", web_creator_context_client);
     m.insert(
         YtClient::WebCreator,
         InnerTubeClient {
@@ -192,52 +193,39 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut android_context = HashMap::new();
-    let mut android_context_client: HashMap<&str, Value> = HashMap::new();
+    let android_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "ANDROID".into(),
+            "clientVersion" => "20.10.38".into(),
+            "androidSdkVersion" => 30.into(),
+            "userAgent" => "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
+            "osName" => "Android".into(),
+            "osVersion" => "11".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    android_context_client.insert("clientName", "ANDROID".into());
-    android_context_client.insert("clientVersion", "20.10.38".into());
-    android_context_client.insert("androidSdkVersion", 30.into());
-    android_context_client.insert(
-        "userAgent",
-        "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
-    );
-    android_context_client.insert("osName", "Android".into());
-    android_context_client.insert("osVersion", "11".into());
-    android_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    let mut android_gvs_po_token_policy = HashMap::new();
-    android_gvs_po_token_policy.insert(
-        StreamingProtocol::Https,
-        GvsPoTokenPolicy {
+    let android_gvs_po_token_policy = hashmap! {
+        StreamingProtocol::Https => GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: true,
         },
-    );
-
-    android_gvs_po_token_policy.insert(
-        StreamingProtocol::Dash,
-        GvsPoTokenPolicy {
+        StreamingProtocol::Dash => GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: true,
         },
-    );
-
-    android_gvs_po_token_policy.insert(
-        StreamingProtocol::Hls,
-        GvsPoTokenPolicy {
+        StreamingProtocol::Hls =>  GvsPoTokenPolicy {
             required: false,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: true,
-        },
-    );
+        }
+    };
 
-    android_context.insert("client", android_context_client);
     m.insert(
         YtClient::Android,
         InnerTubeClient {
@@ -259,20 +247,17 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut android_sdkless_context = HashMap::new();
-    let mut android_sdkless_context_client: HashMap<&str, Value> = HashMap::new();
+    let android_sdkless_context = hashmap! {
+        "client" => hashmap!  {
+            "clientName" => "ANDROID".into(),
+            "clientVersion" => "20.10.38".into(),
+            "userAgent" => "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
+            "osName" =>"Android".into(),
+            "osVersion" => "11".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    android_sdkless_context_client.insert("clientName", "ANDROID".into());
-    android_sdkless_context_client.insert("clientVersion", "20.10.38".into());
-    android_sdkless_context_client.insert(
-        "userAgent",
-        "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
-    );
-    android_sdkless_context_client.insert("osName", "Android".into());
-    android_sdkless_context_client.insert("osVersion", "11".into());
-    android_sdkless_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    android_sdkless_context.insert("client", android_sdkless_context_client);
     m.insert(
         YtClient::AndroidSdkless,
         InnerTubeClient {
@@ -290,23 +275,20 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut android_vr_context = HashMap::new();
-    let mut android_vr_context_client: HashMap<&str, Value> = HashMap::new();
+    let android_vr_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "ANDROID_VR".into(),
+            "clientVersion" => "1.65.10".into(),
+            "deviceMake" => "Oculus".into(),
+            "deviceModel" => "Quest 3".into(),
+            "androidSdkVersion" => 32.into(),
+            "userAgent" => "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip".into(),
+            "osName" => "Android".into(),
+            "osVersion" => "12L".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    android_vr_context_client.insert("clientName", "ANDROID_VR".into());
-    android_vr_context_client.insert("clientVersion", "1.65.10".into());
-    android_vr_context_client.insert("deviceMake", "Oculus".into());
-    android_vr_context_client.insert("deviceModel", "Quest 3".into());
-    android_vr_context_client.insert("androidSdkVersion", 32.into());
-    android_vr_context_client.insert(
-        "userAgent",
-        "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip".into(),
-    );
-    android_vr_context_client.insert("osName", "Android".into());
-    android_vr_context_client.insert("osVersion", "12L".into());
-    android_vr_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    android_vr_context.insert("client", android_vr_context_client);
     m.insert(
         YtClient::AndroidVr,
         InnerTubeClient {
@@ -324,44 +306,34 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut ios_context = HashMap::new();
-    let mut ios_context_client: HashMap<&str, Value> = HashMap::new();
-    let mut ios_gvs_po_token_policy = HashMap::new();
-
-    ios_gvs_po_token_policy.insert(
-        StreamingProtocol::Https,
-        GvsPoTokenPolicy {
+    let ios_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "IOS".into(),
+            "clientVersion" => "20.10.4".into(),
+            "deviceMake" => "Apple".into(),
+            "deviceModel" => "iPhone16,2".into(),
+            "userAgent" => "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)".into(),
+            "osName" => "iPhone".into(),
+            "osVersion" => "18.3.2.22D82".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
+    let ios_gvs_po_token_policy = hashmap! {
+        StreamingProtocol::Https =>GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: true,
         },
-    );
-
-    // HLS Livestreams require POT 30 seconds in.
-    ios_gvs_po_token_policy.insert(
-        StreamingProtocol::Hls,
-        GvsPoTokenPolicy {
+        // HLS Livestreams require POT 30 seconds in.
+        StreamingProtocol::Hls => GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: true,
-        },
-    );
+        }
+    };
 
-    ios_context_client.insert("clientName", "IOS".into());
-    ios_context_client.insert("clientVersion", "20.10.4".into());
-    ios_context_client.insert("deviceMake", "Apple".into());
-    ios_context_client.insert("deviceModel", "iPhone16,2".into());
-    ios_context_client.insert(
-        "userAgent",
-        "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)".into(),
-    );
-    ios_context_client.insert("osName", "iPhone".into());
-    ios_context_client.insert("osVersion", "18.3.2.22D82".into());
-    ios_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    ios_context.insert("client", ios_context_client);
     m.insert(
         YtClient::IOS,
         InnerTubeClient {
@@ -383,18 +355,15 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut mweb_context = HashMap::new();
-    let mut mweb_context_client: HashMap<&str, Value> = HashMap::new();
+    let mweb_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "MWEB".into(),
+            "clientVersion" => "2.20250925.01.00".into(),
+            "userAgent" => "Mozilla/5.0 (iPad; CPU OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1,gzip(gfe)".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    mweb_context_client.insert("clientName", "MWEB".into());
-    mweb_context_client.insert("clientVersion", "2.20250925.01.00".into());
-    mweb_context_client.insert(
-        "userAgent",
-        "Mozilla/5.0 (iPad; CPU OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1,gzip(gfe)".into(),
-    );
-    mweb_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    mweb_context.insert("client", mweb_context_client);
     m.insert(
         YtClient::MWeb,
         InnerTubeClient {
@@ -412,18 +381,15 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut tv_context = HashMap::new();
-    let mut tv_context_client: HashMap<&str, Value> = HashMap::new();
+    let tv_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "TVHTML5".into(),
+            "clientVersion" => "7.20250923.13.00".into(),
+            "userAgent" => "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    tv_context_client.insert("clientName", "TVHTML5".into());
-    tv_context_client.insert("clientVersion", "7.20250923.13.00".into());
-    tv_context_client.insert(
-        "userAgent",
-        "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version".into(),
-    );
-    tv_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    tv_context.insert("client", tv_context_client);
     m.insert(
         YtClient::Tv,
         InnerTubeClient {
@@ -441,47 +407,36 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut tv_simply_context = HashMap::new();
-    let mut tv_simply_context_client: HashMap<&str, Value> = HashMap::new();
-    let mut tv_simply_gvs_po_token_policy = HashMap::new();
-
-    tv_simply_gvs_po_token_policy.insert(
-        StreamingProtocol::Https,
-        GvsPoTokenPolicy {
+    let tv_simply_context = hashmap! {
+        "client" =>  hashmap! {
+            "clientName" => "TVHTML5_SIMPLY".into(),
+            "clientVersion" => "1.0".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
+    let tv_simply_gvs_po_token_policy = hashmap! {
+        StreamingProtocol::Https => GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: false,
         },
-    );
-
-    tv_simply_gvs_po_token_policy.insert(
-        StreamingProtocol::Dash,
-        GvsPoTokenPolicy {
+        StreamingProtocol::Dash => GvsPoTokenPolicy {
             required: true,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: false,
         },
-    );
-
-    tv_simply_gvs_po_token_policy.insert(
-        StreamingProtocol::Hls,
-        GvsPoTokenPolicy {
+        StreamingProtocol::Hls => GvsPoTokenPolicy {
             required: false,
             recommended: true,
             not_required_for_premium: false,
             not_required_with_player_token: false,
-        },
-    );
+        }
+    };
 
-    tv_simply_context_client.insert("clientName", "TVHTML5_SIMPLY".into());
-    tv_simply_context_client.insert("clientVersion", "1.0".into());
-    tv_simply_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    tv_simply_context.insert("client", tv_simply_context_client);
     m.insert(
-        YtClient::Tv,
+        YtClient::TvSimply,
         InnerTubeClient {
             priority: 0,
             innertube_context: tv_simply_context,
@@ -497,14 +452,14 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut tv_embedded_context = HashMap::new();
-    let mut tv_embedded_context_client: HashMap<&str, Value> = HashMap::new();
+    let tv_embedded_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "TVHTML5_SIMPLY_EMBEDDED_PLAYER".into(),
+            "clientVersion" => "2.0".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
 
-    tv_embedded_context_client.insert("clientName", "TVHTML5_SIMPLY_EMBEDDED_PLAYER".into());
-    tv_embedded_context_client.insert("clientVersion", "2.0".into());
-    tv_embedded_context_client.insert("hl", PREFERRED_LOCALE.into());
-
-    tv_embedded_context.insert("client", tv_embedded_context_client);
     m.insert(
         YtClient::TvEmbedded,
         InnerTubeClient {
@@ -522,9 +477,10 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
-    let mut third_party: HashMap<&str, Value> = HashMap::new();
-    // Can be any valid URL.
-    third_party.insert("embedUrl", "https://www.youtube.com/".into());
+    let third_party: HashMap<&str, Value> = hashmap! {
+        // Can be any valid URL.
+        "embedUrl" => "https://www.youtube.com/".into(),
+    };
 
     for (yt_client, ytcfg) in &mut m {
         let client_base_name = yt_client.get_base();

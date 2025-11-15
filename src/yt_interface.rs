@@ -40,6 +40,7 @@ pub enum YtClient {
     // mweb has 'ultralow' formats.
     MWeb,
     Tv,
+    TvSimply,
     /// This client now requires sign-in for every video.
     /// It was previously an age-gate workaround for videos that were `playable_in_embed`
     /// It may still be useful if signed into an EU account that is not age-verified.
@@ -60,6 +61,7 @@ impl YtClient {
             Self::IOS => "ios",
             Self::MWeb => "mweb",
             Self::Tv => "tv",
+            Self::TvSimply => "tv_simply",
             Self::TvEmbedded => "tv_embedded",
         }
     }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Result, anyhow};
 use fancy_regex::Regex;
+use maplit::hashmap;
 use serde_json::{Value, json};
 
 use crate::{
@@ -227,21 +228,19 @@ impl ExtractorPlayerHandle for YtExtractor {
     fn generate_player_context(&self, sts: Option<i64>) -> HashMap<String, Value> {
         let checkout_params = self.generate_checkok_params();
 
-        let mut context: HashMap<String, Value> = HashMap::new();
-        context.insert("html5Preference".into(), "HTML5_PREF_WANTS".into());
+        let mut context: HashMap<String, Value> = hashmap! {
+            "html5Preference".into() => "HTML5_PREF_WANTS".into(),
+        };
 
         if let Some(valid_sts) = sts {
             context.insert("signatureTimestamp".into(), valid_sts.into());
         }
 
-        let mut player_context: HashMap<String, Value> = HashMap::new();
-
-        player_context.insert(
-            "playbackContext".into(),
-            json!({
+        let mut player_context: HashMap<String, Value> = hashmap! {
+            "playbackContext".into() => json!({
                 "contentPlaybackContext": context
-            }),
-        );
+            })
+        };
 
         player_context.extend(checkout_params);
         player_context
@@ -272,8 +271,9 @@ impl ExtractorPlayerHandle for YtExtractor {
         };
 
         let parsed_session_index = self.get_session_index(&[webpage_ytcfg, player_ytcfg]);
-        let mut yt_query: HashMap<String, Value> = HashMap::new();
-        yt_query.insert("videoId".into(), video_id.as_str().into());
+        let mut yt_query: HashMap<String, Value> = hashmap! {
+            "videoId".into() => video_id.as_str().into(),
+        };
 
         let sts = self
             .extract_signature_timestamp(
