@@ -21,6 +21,12 @@ impl YtEndpoint {
     }
 }
 
+#[cfg_attr(
+    target_arch = "wasm32",
+    derive(serde::Serialize, serde::Deserialize, tsify::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi),
+    serde(rename_all = "camelCase")
+)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum YtClient {
     Web,

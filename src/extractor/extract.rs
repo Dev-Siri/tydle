@@ -281,6 +281,7 @@ impl InfoExtractor for YtExtractor {
 
                 let has_drm = fmt.get("drmFamilies").is_some();
 
+                #[cfg(feature = "logging")]
                 if has_drm {
                     let mut warn_msg = format!(
                         "Some {} client https formats have been skipped as they are DRM protected.",
