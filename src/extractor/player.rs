@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use anyhow::{Result, anyhow};
 use fancy_regex::Regex;
 use maplit::hashmap;
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 use crate::{
+    STREAMING_DATA_CLIENT_NAME, STREAMING_DATA_INNERTUBE_CONTEXT,
     cache::{CacheAccess, PlayerCacheHandle},
     extractor::{
         api::ExtractorApiHandle,
@@ -382,40 +383,40 @@ impl ExtractorPlayerHandle for YtExtractor {
             }
 
             // TODO: Implement PO Token fetching
-            let mut fetch_po_token_args: HashMap<String, Value> = HashMap::new();
+            // let mut fetch_po_token_args: HashMap<String, Value> = HashMap::new();
 
-            fetch_po_token_args.insert("client".into(), client.into());
-            fetch_po_token_args.insert("visitor_data".into(), visitor_data.clone().into());
-            fetch_po_token_args.insert("video_id".into(), video_id.clone().into());
-            fetch_po_token_args.insert("data_sync_id".into(), data_sync_id.clone().into());
-            fetch_po_token_args.insert(
-                "player_url".into(),
-                if require_js_player {
-                    player_url.clone()
-                } else {
-                    None
-                }
-                .into(),
-            );
-            fetch_po_token_args.insert("webpage".into(), webpage.clone().into());
-            fetch_po_token_args.insert(
-                "session_index".into(),
-                self.get_session_index(&[webpage_ytcfg, player_ytcfg])
-                    .into(),
-            );
-            fetch_po_token_args.insert(
-                "ytcfg".into(),
-                if player_ytcfg.is_empty() {
-                    self.select_default_ytcfg(Some(&popped_client))?
-                        .to_json_val_hashmap()?
-                } else {
-                    player_ytcfg.clone()
-                }
-                .into_iter()
-                .collect(),
-            );
+            // fetch_po_token_args.insert("client".into(), client.into());
+            // fetch_po_token_args.insert("visitor_data".into(), visitor_data.clone().into());
+            // fetch_po_token_args.insert("video_id".into(), video_id.clone().into());
+            // fetch_po_token_args.insert("data_sync_id".into(), data_sync_id.clone().into());
+            // fetch_po_token_args.insert(
+            //     "player_url".into(),
+            //     if require_js_player {
+            //         player_url.clone()
+            //     } else {
+            //         None
+            //     }
+            //     .into(),
+            // );
+            // fetch_po_token_args.insert("webpage".into(), webpage.clone().into());
+            // fetch_po_token_args.insert(
+            //     "session_index".into(),
+            //     self.get_session_index(&[webpage_ytcfg, player_ytcfg])
+            //         .into(),
+            // );
+            // fetch_po_token_args.insert(
+            //     "ytcfg".into(),
+            //     if player_ytcfg.is_empty() {
+            //         self.select_default_ytcfg(Some(&popped_client))?
+            //             .to_json_val_hashmap()?
+            //     } else {
+            //         player_ytcfg.clone()
+            //     }
+            //     .into_iter()
+            //     .collect(),
+            // );
 
-            let player_response = self
+            let mut player_response = self
                 .extract_player_response(
                     &popped_client,
                     video_id,
@@ -444,6 +445,27 @@ impl ExtractorPlayerHandle for YtExtractor {
             }
 
             if !player_response.is_empty() {
+                let innertube_context = if player_ytcfg.is_empty() {
+                    player_ytcfg
+                        .iter()
+                        .map(|(k, v)| (k.clone(), v.clone()))
+                        .collect::<Map<String, Value>>()
+                } else {
+                    self.select_default_ytcfg(Some(&popped_client))?
+                        .to_json_val_hashmap()?
+                        .get("INNERTUBE_CONTEXT")
+                        .unwrap()
+                        .as_object()
+                        .unwrap()
+                        .clone()
+                };
+
+                player_response.insert(STREAMING_DATA_CLIENT_NAME.into(), client.into());
+                player_response.insert(
+                    STREAMING_DATA_INNERTUBE_CONTEXT.into(),
+                    Value::Object(innertube_context),
+                );
+
                 prs.push(player_response.clone());
             }
 

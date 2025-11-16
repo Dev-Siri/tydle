@@ -8,13 +8,14 @@ use fancy_regex::Regex;
 use serde_json::{Map, Value};
 
 use crate::{
-    TydleOptions,
+    AudioTrackInfo, Ext, STREAMING_DATA_CLIENT_NAME, TydleOptions,
     cache::CacheStore,
     cookies::CookieJar,
     extractor::{
         auth::ExtractorAuthHandle, client::INNERTUBE_CLIENTS, download::ExtractorDownloadHandle,
         json::ExtractorJsonHandle, player::ExtractorPlayerHandle, ytcfg::ExtractorYtCfgHandle,
     },
+    utils::{file_size_from_tbr, mime_type_to_ext},
     yt_interface::{
         VideoId, YtAgeLimit, YtChannel, YtClient, YtManifest, YtMediaType, YtStream,
         YtStreamResponse, YtStreamSource, YtThumbnail, YtVideoInfo,
@@ -214,6 +215,11 @@ impl InfoExtractor for YtExtractor {
                 continue;
             }
 
+            let client_name = player_response
+                .get(STREAMING_DATA_CLIENT_NAME)
+                .and_then(|c| c.as_str())
+                .unwrap_or("UNKNOWN");
+
             let mut all_formats = Vec::new();
 
             if let Some(streaming_data) = player_response.get("streamingData") {
@@ -239,6 +245,13 @@ impl InfoExtractor for YtExtractor {
                     );
                     continue;
                 }
+
+                let audio_track = fmt
+                    .get("audioTrack")
+                    .unwrap_or_default()
+                    .as_object()
+                    .cloned()
+                    .unwrap_or(Map::new());
 
                 let itag = fmt
                     .get("itag")
@@ -266,6 +279,28 @@ impl InfoExtractor for YtExtractor {
                     quality = Some("tiny".to_string());
                 }
 
+                let has_drm = fmt.get("drmFamilies").is_some();
+
+                if has_drm {
+                    let mut warn_msg = format!(
+                        "Some {} client https formats have been skipped as they are DRM protected.",
+                        client_name
+                    );
+
+                    if client_name == "tv" {
+                        warn_msg += format!(
+                            "{} may have an experiment that applies DRM to all videos on the `tv` client.\nSee  https://github.com/yt-dlp/yt-dlp/issues/12563  for more details.",
+                            if self.is_authenticated()? {
+                                "Your account"
+                            } else {
+                                "The current session"
+                            }
+                        ).as_str();
+                    }
+
+                    log::warn!("{warn_msg}");
+                }
+
                 let mut stream_source = None;
 
                 if let Some(fmt_url) = fmt.get("url").clone() {
@@ -278,9 +313,14 @@ impl InfoExtractor for YtExtractor {
                     stream_source = Some(YtStreamSource::Signature(sc.to_string()));
                 }
 
-                let Some(src) = stream_source else {
+                let Some(source) = stream_source else {
                     continue;
                 };
+
+                let format_duration = fmt
+                    .get("approxDurationMs")
+                    .and_then(|d| d.as_f64())
+                    .unwrap_or_default();
 
                 let tbr = fmt
                     .get("averageBitrate")
@@ -288,17 +328,81 @@ impl InfoExtractor for YtExtractor {
                     .and_then(|v| v.as_f64())
                     .unwrap_or(1000 as f64);
 
-                let yt_stream = YtStream::new(
-                    fmt.get("audioSampleRate").and_then(|v| v.as_u64()),
-                    fmt.get("contentLength")
-                        .and_then(|v| v.as_str().and_then(|s| s.parse().ok())),
-                    itag,
-                    quality.and_then(|s| Some(s.to_lowercase())),
-                    src,
-                    tbr,
-                );
+                let name = fmt
+                    .get("qualityLabel")
+                    .and_then(|ql| ql.as_str())
+                    .and_then(|qls| Some(qls.to_string()))
+                    .unwrap_or(
+                        quality
+                            .clone()
+                            .unwrap_or_default()
+                            .replace("audio_quality_", ""),
+                    );
 
-                streams.push(yt_stream);
+                let audio_display = audio_track
+                    .get("displayName")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+
+                let is_default = audio_track
+                    .get("audioIsDefault")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                let projection = fmt
+                    .get("projectionType")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_lowercase());
+
+                let spatial_audio = fmt
+                    .get("spatialAudioType")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.replace("SPATIAL_AUDIO_TYPE_", "").to_lowercase());
+
+                let re = Regex::new(r#"((?:[^/]+)/(?:[^;]+))(?:;\s*codecs="([^"]+)")?"#)?;
+
+                let ext: Ext = match re.captures(
+                    fmt.get("mimeType")
+                        .unwrap_or_default()
+                        .as_str()
+                        .unwrap_or_default(),
+                )? {
+                    Some(mime_mobj_captures) => {
+                        let mime_type = mime_mobj_captures
+                            .get(0)
+                            .and_then(|mt| Some(mt.as_str()))
+                            .unwrap_or_default();
+                        mime_type_to_ext(mime_type)
+                    }
+                    None => Ext::Unknown,
+                };
+
+                streams.push(YtStream {
+                    asr: fmt.get("audioSampleRate").and_then(|v| v.as_u64()),
+                    file_size: fmt
+                        .get("contentLength")
+                        .and_then(|v| v.as_str().and_then(|s| s.parse().ok())),
+                    file_size_approx: file_size_from_tbr(tbr, format_duration),
+                    height: fmt.get("height").and_then(|h| h.as_u64()),
+                    width: fmt.get("width").and_then(|w| w.as_u64()),
+                    has_drm,
+                    itag,
+                    source,
+                    tbr,
+                    quality_label: name,
+                    audio_track: AudioTrackInfo {
+                        display_name: audio_display,
+                        is_default,
+                    },
+                    projection,
+                    spatial_audio,
+                    client: YtClient::from_str(client_name),
+                    is_drc: fmt
+                        .get("isDrc")
+                        .and_then(|dr| dr.as_bool())
+                        .unwrap_or_default(),
+                    ext,
+                });
             }
         }
 

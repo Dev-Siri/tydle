@@ -48,6 +48,25 @@ pub enum YtClient {
 }
 
 impl YtClient {
+    pub fn from_str(str_client: &str) -> YtClient {
+        match str_client {
+            "web" => Self::Web,
+            "web_safari" => Self::WebSafari,
+            "web_embedded" => Self::WebEmbedded,
+            "web_music" => Self::WebMusic,
+            "web_creator" => Self::WebCreator,
+            "android" => Self::Android,
+            "android_sdkless" => Self::AndroidSdkless,
+            "android_vr" => Self::AndroidVr,
+            "ios" => Self::IOS,
+            "mweb" => Self::MWeb,
+            "tv" => Self::Tv,
+            "tv_simply" => Self::TvSimply,
+            "tv_embedded" => Self::TvEmbedded,
+            _ => Self::Web, // Return a default client.
+        }
+    }
+
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Web => "web",
@@ -97,13 +116,13 @@ pub const VIDEO_ONLY_FORMATS: [&str; 10] = [
     "tiny", "small", "medium", "large", "hd720", "hd1080", "hd1440", "hd2160", "hd2880", "highres",
 ];
 
-// pub const STREAMING_DATA_CLIENT_NAME: &str = "__yt_dlp_client";
-// pub const STREAMING_DATA_FETCH_SUBS_PO_TOKEN: &str = "__yt_dlp_fetch_subs_po_token";
-// pub const STREAMING_DATA_FETCH_GVS_PO_TOKEN: &str = "__yt_dlp_fetch_gvs_po_token";
-// pub const STREAMING_DATA_PLAYER_TOKEN_PROVIDED: &str = "__yt_dlp_player_token_provided";
-// pub const STREAMING_DATA_INNERTUBE_CONTEXT: &str = "__yt_dlp_innertube_context";
-// pub const STREAMING_DATA_IS_PREMIUM_SUBSCRIBER: &str = "__yt_dlp_is_premium_subscriber";
-// pub const STREAMING_DATA_FETCHED_TIMESTAMP: &str = "__yt_dlp_fetched_timestamp";
+pub const STREAMING_DATA_CLIENT_NAME: &str = "__tydle_ytdlp_client";
+// pub const STREAMING_DATA_FETCH_SUBS_PO_TOKEN: &str = "__tydle_ytdlp_fetch_subs_po_token";
+// pub const STREAMING_DATA_FETCH_GVS_PO_TOKEN: &str = "__tydle_ytdlp_fetch_gvs_po_token";
+pub const STREAMING_DATA_PLAYER_TOKEN_PROVIDED: &str = "__tydle_ytdlp_player_token_provided";
+pub const STREAMING_DATA_INNERTUBE_CONTEXT: &str = "__tydle_ytdlp_innertube_context";
+// pub const STREAMING_DATA_IS_PREMIUM_SUBSCRIBER: &str = "__tydle_ytdlp_is_premium_subscriber";
+// pub const STREAMING_DATA_FETCHED_TIMESTAMP: &str = "__tydle_ytdlp_fetched_timestamp";
 // pub const DEFAULT_PLAYER_JS_VERSION: &str = "actual";
 // pub const DEFAULT_PLAYER_JS_VARIANT: &str = "main";
 
@@ -242,30 +261,32 @@ pub enum YtStreamSource {
 pub struct YtStream {
     pub asr: Option<u64>,
     pub file_size: Option<u64>,
+    pub file_size_approx: f64,
+    pub height: Option<u64>,
+    pub width: Option<u64>,
+    pub has_drm: bool,
     pub itag: Option<String>,
-    pub quality: Option<String>,
     pub source: YtStreamSource,
     pub tbr: f64,
+    pub audio_track: AudioTrackInfo,
+    pub quality_label: String,
+    pub is_drc: bool,
+    pub projection: Option<String>,
+    pub spatial_audio: Option<String>,
+    pub client: YtClient,
+    pub ext: Ext,
 }
 
-impl YtStream {
-    pub fn new(
-        asr: Option<u64>,
-        file_size: Option<u64>,
-        itag: Option<String>,
-        quality: Option<String>,
-        source: YtStreamSource,
-        tbr: f64,
-    ) -> Self {
-        Self {
-            asr,
-            file_size,
-            itag,
-            quality,
-            source,
-            tbr,
-        }
-    }
+#[cfg_attr(
+    target_arch = "wasm32",
+    derive(serde::Serialize, serde::Deserialize, tsify::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi),
+    serde(rename_all = "camelCase")
+)]
+#[derive(Debug, Clone)]
+pub struct AudioTrackInfo {
+    pub display_name: Option<String>,
+    pub is_default: bool,
 }
 
 #[cfg_attr(target_arch = "wasm32", tsify::declare)]
@@ -459,9 +480,7 @@ impl Filterable for YtStreamList {
         YtStreamList(
             streams
                 .iter()
-                .filter(|s| {
-                    AUDIO_ONLY_FORMATS.contains(&s.quality.clone().unwrap_or_default().as_str())
-                })
+                .filter(|s| AUDIO_ONLY_FORMATS.contains(&s.quality_label.clone().as_str()))
                 .cloned()
                 .collect(),
         )
@@ -472,9 +491,7 @@ impl Filterable for YtStreamList {
         YtStreamList(
             streams
                 .iter()
-                .filter(|s| {
-                    VIDEO_ONLY_FORMATS.contains(&s.quality.clone().unwrap_or_default().as_str())
-                })
+                .filter(|s| VIDEO_ONLY_FORMATS.contains(&s.quality_label.clone().as_str()))
                 .cloned()
                 .collect(),
         )
@@ -612,4 +629,66 @@ pub struct YtVideoInfo {
     pub thumbnails: Vec<YtThumbnail>,
     pub media_type: YtMediaType,
     pub age_limit: YtAgeLimit,
+}
+
+#[cfg_attr(
+    target_arch = "wasm32",
+    derive(serde::Serialize, serde::Deserialize, tsify::Tsify),
+    tsify(into_wasm_abi, from_wasm_abi),
+    serde(rename_all = "lowercase")
+)]
+#[derive(Debug, Default, Clone, Copy)]
+pub enum Ext {
+    #[default]
+    Unknown,
+    /// 3gp, renamed because identifiers can't start with a number.
+    ThreeGp,
+    Ts,
+    Mp4,
+    Mpeg,
+    M3u8,
+    Mov,
+    Webm,
+    Vp9,
+    Ogv,
+    Flv,
+    M4v,
+    Mkv,
+    Mng,
+    Asf,
+    Wmv,
+    Avi,
+    Mpd,
+    F4m,
+    Ism,
+    M4a,
+    Mp3,
+    Mka,
+    M3u,
+    Aac,
+    Flac,
+    Mid,
+    Ogg,
+    Wav,
+    Ra,
+    Avif,
+    Bmp,
+    Gif,
+    Jpg,
+    Png,
+    Svg,
+    Tif,
+    Wbmp,
+    Webp,
+    Ico,
+    Jng,
+    Fs,
+    Tt,
+    Dfxp,
+    Ttml,
+    Sami,
+    Gz,
+    Json,
+    Xml,
+    Zip,
 }
