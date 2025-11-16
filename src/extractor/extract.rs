@@ -385,6 +385,7 @@ impl InfoExtractor for YtExtractor {
                     file_size_approx: file_size_from_tbr(tbr, format_duration),
                     height: fmt.get("height").and_then(|h| h.as_u64()),
                     width: fmt.get("width").and_then(|w| w.as_u64()),
+                    format_duration,
                     has_drm,
                     itag,
                     source,

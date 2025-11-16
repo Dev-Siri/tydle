@@ -264,6 +264,7 @@ pub struct YtStream {
     pub file_size_approx: f64,
     pub height: Option<u64>,
     pub width: Option<u64>,
+    pub format_duration: f64,
     pub has_drm: bool,
     pub itag: Option<String>,
     pub source: YtStreamSource,
