@@ -206,7 +206,7 @@ pub fn parse_codecs(codecs: &str) -> Result<(Option<String>, Option<String>)> {
         // VIDEO prefixes
         const VIDEO_PREFIXES: &[&str] = &[
             "avc1", "avc2", "avc3", "avc4", "vp9", "vp8", "hev1", "hev2", "h263", "h264", "mp4v",
-            "hvc1", "av1", "theora", "dvh1", "dvhe",
+            "hvc1", "av01", "theora", "dvh1", "dvhe",
         ];
 
         // AUDIO prefixes
