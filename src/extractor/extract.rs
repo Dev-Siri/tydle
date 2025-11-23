@@ -8,7 +8,7 @@ use fancy_regex::Regex;
 use serde_json::{Map, Value};
 
 use crate::{
-    TydleOptions,
+    TydleOptions, YT_SUB_DOMAIN,
     cache::CacheStore,
     cookies::CookieJar,
     extractor::{
@@ -651,7 +651,13 @@ impl InfoExtractor for YtExtractor {
     }
 
     async fn extract_manifest(&self, video_id: &VideoId) -> Result<YtManifest> {
-        let webpage_url = format!("{}://www.youtube.com/watch", self.http_scheme());
+        let request_address = if self.tydle_options.proxy_address.is_empty() {
+            YT_SUB_DOMAIN
+        } else {
+            &self.tydle_options.proxy_address
+        };
+
+        let webpage_url = format!("{}://{}/watch", self.http_scheme(), request_address);
         let (initial_extracted_data, player_url) =
             self.extract(&webpage_url, &YtClient::Web, video_id).await?;
 

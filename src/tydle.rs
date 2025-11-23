@@ -37,6 +37,8 @@ pub struct TydleOptions {
     pub prefer_insecure: bool,
     /// Provide an address to set it as the `X-Forwarded-For` header when requesting YouTube.
     pub source_address: String,
+    /// Provide a proxy domain address which tydle will request to instead of `www.youtube.com` in cases where you are CORS restricted.
+    pub proxy_address: String,
     /// Provide a default client that tydle will use to request YouTube when it fetches without a specific client internally.
     pub default_client: YtClient,
 }

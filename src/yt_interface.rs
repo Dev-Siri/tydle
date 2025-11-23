@@ -109,6 +109,7 @@ impl YtClient {
 
 pub(crate) const PREFERRED_LOCALE: &str = "en";
 pub(crate) const YT_DOMAIN: &str = ".youtube.com";
+pub(crate) const YT_SUB_DOMAIN: &str = "www.youtube.com";
 pub(crate) const YT_URL: &str = "https://www.youtube.com";
 
 pub const STREAMING_DATA_CLIENT_NAME: &str = "__tydle_ytdlp_client";
