@@ -5,6 +5,7 @@ mod extractor;
 mod utils;
 
 pub mod cookies;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;
 #[cfg(feature = "logging")]
 pub mod logger;
