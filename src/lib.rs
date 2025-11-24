@@ -5,6 +5,7 @@ mod extractor;
 mod utils;
 
 pub mod cookies;
+pub mod ffi;
 #[cfg(feature = "logging")]
 pub mod logger;
 pub mod tydle;
