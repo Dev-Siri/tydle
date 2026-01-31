@@ -70,7 +70,7 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let web_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "WEB".into(),
-            "clientVersion" => "2.20250925.01.00".into(),
+            "clientVersion" => "2.20260114.08.00".into(),
             "hl" => PREFERRED_LOCALE.into()
         }
     };
@@ -95,7 +95,7 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let web_safari_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "WEB".into(),
-            "clientVersion" => "2.20250925.01.00".into(),
+            "clientVersion" => "2.20260114.08.00".into(),
             "userAgent" => "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)".into(),
             "hl" => PREFERRED_LOCALE.into()
         },
@@ -121,7 +121,7 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let web_embedded_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "WEB_EMBEDDED_PLAYER".into(),
-            "clientVersion" => "1.20250923.21.00".into(),
+            "clientVersion" => "1.20260115.01.00".into(),
             "hl" => PREFERRED_LOCALE.into()
         }
     };
@@ -146,7 +146,7 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let web_music_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "WEB_REMIX".into(),
-            "clientVersion" => "1.20250922.03.00".into(),
+            "clientVersion" => "1.20260115.01.00".into(),
             "hl" => PREFERRED_LOCALE.into(),
         }
     };
@@ -171,7 +171,7 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let web_creator_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "WEB_CREATOR".into(),
-            "clientVersion" => "1.20250922.03.00".into(),
+            "clientVersion" => "1.20260114.05.00".into(),
             "hl" => PREFERRED_LOCALE.into(),
         }
     };
@@ -196,9 +196,9 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let android_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "ANDROID".into(),
-            "clientVersion" => "20.10.38".into(),
+            "clientVersion" => "21.02.35".into(),
             "androidSdkVersion" => 30.into(),
-            "userAgent" => "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
+            "userAgent" => "com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip".into(),
             "osName" => "Android".into(),
             "osVersion" => "11".into(),
             "hl" => PREFERRED_LOCALE.into(),
@@ -250,8 +250,8 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let android_sdkless_context = hashmap! {
         "client" => hashmap!  {
             "clientName" => "ANDROID".into(),
-            "clientVersion" => "20.10.38".into(),
-            "userAgent" => "com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip".into(),
+            "clientVersion" => "21.02.35".into(),
+            "userAgent" => "com.google.android.youtube/21.02.35 (Linux; U; Android 11) gzip".into(),
             "osName" =>"Android".into(),
             "osVersion" => "11".into(),
             "hl" => PREFERRED_LOCALE.into(),
@@ -278,11 +278,11 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let android_vr_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "ANDROID_VR".into(),
-            "clientVersion" => "1.65.10".into(),
+            "clientVersion" => "1.71.26".into(),
             "deviceMake" => "Oculus".into(),
             "deviceModel" => "Quest 3".into(),
             "androidSdkVersion" => 32.into(),
-            "userAgent" => "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip".into(),
+            "userAgent" => "com.google.android.apps.youtube.vr.oculus/1.71.26 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip".into(),
             "osName" => "Android".into(),
             "osVersion" => "12L".into(),
             "hl" => PREFERRED_LOCALE.into(),
@@ -309,10 +309,10 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let ios_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "IOS".into(),
-            "clientVersion" => "20.10.4".into(),
+            "clientVersion" => "21.02.3".into(),
             "deviceMake" => "Apple".into(),
             "deviceModel" => "iPhone16,2".into(),
-            "userAgent" => "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)".into(),
+            "userAgent" => "com.google.ios.youtube/21.02.3 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)".into(),
             "osName" => "iPhone".into(),
             "osVersion" => "18.3.2.22D82".into(),
             "hl" => PREFERRED_LOCALE.into(),
@@ -355,10 +355,59 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
         },
     );
 
+    let ios_downgraded_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "IOS".into(),
+            "clientVersion" => "19.49.7".into(),
+            "deviceMake" => "Apple".into(),
+            "deviceModel" => "iPhone16,2".into(),
+            "userAgent" => "com.google.ios.youtube/19.49.7 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X;)".into(),
+            "osName" => "iPhone".into(),
+            "osVersion" => "17.5.1.21F90".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
+    let ios_downgraded_gvs_po_token_policy = hashmap! {
+        StreamingProtocol::Https =>GvsPoTokenPolicy {
+            required: true,
+            recommended: true,
+            not_required_for_premium: false,
+            not_required_with_player_token: true,
+        },
+        // HLS Livestreams require POT 30 seconds in.
+        StreamingProtocol::Hls => GvsPoTokenPolicy {
+            required: false,
+            recommended: true,
+            not_required_for_premium: false,
+            not_required_with_player_token: true,
+        }
+    };
+
+    m.insert(
+        YtClient::IOSDowngraded,
+        InnerTubeClient {
+            priority: 0,
+            innertube_context: ios_downgraded_context,
+            innertube_host: DEFAULT_INNERTUBE_HOST,
+            innertube_context_client_name: 5,
+            supports_cookies: false,
+            require_js_player: false,
+            require_auth: false,
+            authenticated_user_agent: None,
+            gvs_po_token_policy: ios_downgraded_gvs_po_token_policy,
+            player_po_token_policy: PlayerPoTokenPolicy {
+                required: false,
+                recommended: true,
+                not_required_for_premium: false,
+            },
+            subs_po_token_policy: Default::default(),
+        },
+    );
+
     let mweb_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "MWEB".into(),
-            "clientVersion" => "2.20250925.01.00".into(),
+            "clientVersion" => "2.20260115.01.00".into(),
             "userAgent" => "Mozilla/5.0 (iPad; CPU OS 16_7_10 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1,gzip(gfe)".into(),
             "hl" => PREFERRED_LOCALE.into(),
         }
@@ -384,8 +433,8 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
     let tv_context = hashmap! {
         "client" => hashmap! {
             "clientName" => "TVHTML5".into(),
-            "clientVersion" => "7.20250923.13.00".into(),
-            "userAgent" => "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version".into(),
+            "clientVersion" => "7.20260114.12.00".into(),
+            "userAgent" => "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/25.lts.30.1034943-gold (unlike Gecko), Unknown_TV_Unknown_0/Unknown (Unknown, Unknown)".into(),
             "hl" => PREFERRED_LOCALE.into(),
         }
     };
@@ -400,7 +449,33 @@ pub static INNERTUBE_CLIENTS: Lazy<HashMap<YtClient, InnerTubeClient>> = Lazy::n
             supports_cookies: true,
             require_js_player: true,
             require_auth: false,
-            authenticated_user_agent: Some("Mozilla/5.0 (ChromiumStylePlatform) Cobalt/25.lts.30.1034943-gold (unlike Gecko), Unknown_TV_Unknown_0/Unknown (Unknown, Unknown)"),
+            authenticated_user_agent: None,
+            gvs_po_token_policy: WEB_PO_TOKEN_POLICIES.gvs_po_token_policy.clone(),
+            player_po_token_policy: Default::default(),
+            subs_po_token_policy: Default::default(),
+        },
+    );
+
+    let tv_downgraded_context = hashmap! {
+        "client" => hashmap! {
+            "clientName" => "TVHTML5".into(),
+            "clientVersion" => "5.20260114".into(),
+            "userAgent" => "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version".into(),
+            "hl" => PREFERRED_LOCALE.into(),
+        }
+    };
+
+    m.insert(
+        YtClient::TvDowngraded,
+        InnerTubeClient {
+            priority: 0,
+            innertube_context: tv_downgraded_context,
+            innertube_host: DEFAULT_INNERTUBE_HOST,
+            innertube_context_client_name: 7,
+            supports_cookies: true,
+            require_js_player: true,
+            require_auth: true,
+            authenticated_user_agent: None,
             gvs_po_token_policy: WEB_PO_TOKEN_POLICIES.gvs_po_token_policy.clone(),
             player_po_token_policy: Default::default(),
             subs_po_token_policy: Default::default(),

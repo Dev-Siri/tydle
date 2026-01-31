@@ -160,20 +160,15 @@ impl InfoExtractor for YtExtractor {
     fn get_clients(&self, is_premium_subscriber: bool) -> Result<Vec<YtClient>> {
         let mut clients = if is_premium_subscriber {
             // Premium does not require POT. (except for subtitles)
-            vec![
-                YtClient::Tv,
-                YtClient::WebCreator,
-                YtClient::WebSafari,
-                YtClient::Web,
-            ]
+            vec![YtClient::TvDowngraded, YtClient::WebCreator, YtClient::Web]
         } else if self.is_authenticated()? {
-            vec![YtClient::Tv, YtClient::WebSafari, YtClient::Web]
+            vec![YtClient::TvDowngraded, YtClient::Web, YtClient::WebSafari]
         } else {
             vec![
-                YtClient::AndroidSdkless,
-                YtClient::Tv,
-                YtClient::WebSafari,
+                YtClient::AndroidVr,
+                YtClient::IOSDowngraded,
                 YtClient::Web,
+                YtClient::WebSafari,
             ]
         };
 

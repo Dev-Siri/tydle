@@ -47,9 +47,11 @@ pub enum YtClient {
     AndroidVr,
     /// iOS clients have HLS live streams. Setting device model to get 60fps formats.
     IOS,
+    IOSDowngraded,
     // mweb has 'ultralow' formats.
     MWeb,
     Tv,
+    TvDowngraded,
     TvSimply,
     /// This client now requires sign-in for every video.
     /// It was previously an age-gate workaround for videos that were `playable_in_embed`
@@ -69,8 +71,10 @@ impl YtClient {
             "android_sdkless" => Self::AndroidSdkless,
             "android_vr" => Self::AndroidVr,
             "ios" => Self::IOS,
+            "ios_downgraded" => Self::IOSDowngraded,
             "mweb" => Self::MWeb,
             "tv" => Self::Tv,
+            "tv_downgraded" => Self::TvDowngraded,
             "tv_simply" => Self::TvSimply,
             "tv_embedded" => Self::TvEmbedded,
             _ => Self::Web, // Return a default client.
@@ -88,8 +92,10 @@ impl YtClient {
             Self::AndroidSdkless => "android_sdkless",
             Self::AndroidVr => "android_vr",
             Self::IOS => "ios",
+            Self::IOSDowngraded => "ios_downgraded",
             Self::MWeb => "mweb",
             Self::Tv => "tv",
+            Self::TvDowngraded => "tv_downgraded",
             Self::TvSimply => "tv_simply",
             Self::TvEmbedded => "tv_embedded",
         }
