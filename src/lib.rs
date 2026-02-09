@@ -1,9 +1,9 @@
-mod cache;
 #[cfg(feature = "cipher")]
 mod cipher;
 mod extractor;
 mod utils;
 
+pub mod cache;
 pub mod cookies;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;
@@ -12,5 +12,6 @@ pub mod logger;
 pub mod tydle;
 pub mod yt_interface;
 
+pub use crate::cache::*;
 pub use crate::tydle::*;
 pub use crate::yt_interface::*;

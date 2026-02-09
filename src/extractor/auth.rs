@@ -4,6 +4,7 @@ use anyhow::{Result, anyhow};
 use serde_json::Value;
 
 use crate::{
+    cache::CacheAccess,
     cookies::{Cookie, CookieStore},
     extractor::{cookies::ExtractorCookieHandle, extract::YtExtractor, json::ExtractorJsonHandle},
     utils::{convert_to_query_string, parse_query_string},
@@ -39,7 +40,11 @@ pub trait ExtractorAuthHandle {
 }
 
 /// Handles Auth with cookies and user-set preferences.
-impl ExtractorAuthHandle for YtExtractor {
+impl<P, C> ExtractorAuthHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + Send + Sync,
+    C: CacheAccess,
+{
     fn initialize_cookie_auth(&self) -> Result<()> {
         self.passed_auth_cookies.store(false, Ordering::Relaxed);
         if self.has_auth_cookies()? {

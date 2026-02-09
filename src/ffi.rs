@@ -2,17 +2,20 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::ptr;
 
+use crate::cache::MemoryCacheStore;
 use crate::{Extract, Tydle, TydleOptions, yt_interface::VideoId};
 use anyhow::Result;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn tydle_new() -> *mut Tydle {
+pub extern "C" fn tydle_new() -> *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore> {
     let ty = Tydle::new(TydleOptions::default()).unwrap();
     Box::into_raw(Box::new(ty))
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn tydle_free(ptr: *mut Tydle) {
+pub extern "C" fn tydle_free(
+    ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
+) {
     if ptr.is_null() {
         return;
     }
@@ -23,7 +26,7 @@ pub extern "C" fn tydle_free(ptr: *mut Tydle) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn tydle_get_manifest_json(
-    tydle_ptr: *mut Tydle,
+    tydle_ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
     video_id: *const c_char,
 ) -> *mut c_char {
     if tydle_ptr.is_null() {
@@ -57,7 +60,7 @@ pub extern "C" fn tydle_get_manifest_json(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn tydle_get_streams_json(
-    tydle_ptr: *mut Tydle,
+    tydle_ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
     video_id: *const c_char,
 ) -> *mut c_char {
     if tydle_ptr.is_null() {
@@ -91,7 +94,7 @@ pub extern "C" fn tydle_get_streams_json(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn tydle_get_video_info_json(
-    tydle_ptr: *mut Tydle,
+    tydle_ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
     video_id: *const c_char,
 ) -> *mut c_char {
     if tydle_ptr.is_null() {
@@ -125,7 +128,7 @@ pub extern "C" fn tydle_get_video_info_json(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn tydle_streams_from_manifest_json(
-    tydle_ptr: *mut Tydle,
+    tydle_ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
     manifest_json: *const c_char,
 ) -> *mut c_char {
     if tydle_ptr.is_null() {
@@ -159,7 +162,7 @@ pub extern "C" fn tydle_streams_from_manifest_json(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn tydle_video_info_from_manifest_json(
-    tydle_ptr: *mut Tydle,
+    tydle_ptr: *mut Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
     manifest_json: *const c_char,
 ) -> *mut c_char {
     if tydle_ptr.is_null() {

@@ -62,7 +62,11 @@ pub trait ExtractorPlayerHandle {
     ) -> Result<(Vec<HashMap<String, Value>>, String)>;
 }
 
-impl ExtractorPlayerHandle for YtExtractor {
+impl<P, C> ExtractorPlayerHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync,
+    C: CacheAccess,
+{
     fn construct_player_url(&self, player_identifier: PlayerIdentifier) -> Result<String> {
         match player_identifier {
             PlayerIdentifier::PlayerUrl(player_url) => {

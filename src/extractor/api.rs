@@ -6,6 +6,7 @@ use reqwest::Url;
 use serde_json::{Value, json};
 
 use crate::{
+    cache::CacheAccess,
     extractor::{
         auth::ExtractorAuthHandle, client::INNERTUBE_CLIENTS, cookies::ExtractorCookieHandle,
         extract::YtExtractor, ytcfg::ExtractorYtCfgHandle,
@@ -34,7 +35,11 @@ pub trait ExtractorApiHandle {
     ) -> Result<HashMap<String, Value>>;
 }
 
-impl ExtractorApiHandle for YtExtractor {
+impl<P, C> ExtractorApiHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + Send + Sync,
+    C: CacheAccess,
+{
     fn generate_api_headers(
         &self,
         ytcfg: HashMap<String, Value>,

@@ -232,3 +232,8 @@ pub fn parse_codecs(codecs: &str) -> Result<(Option<String>, Option<String>)> {
 
     Ok((Some(vcodec), Some(acodec)))
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn sanitize_filename(filename: &str) -> String {
+    filename.replace("/", "%2F")
+}

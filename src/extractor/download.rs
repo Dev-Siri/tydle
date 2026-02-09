@@ -6,6 +6,7 @@ use reqwest::Url;
 use serde_json::Value;
 
 use crate::{
+    cache::{CacheAccess, PlayerCacheHandle},
     extractor::{
         api::ExtractorApiHandle,
         client::INNERTUBE_CLIENTS,
@@ -40,7 +41,11 @@ pub trait ExtractorDownloadHandle {
     ) -> Result<String>;
 }
 
-impl ExtractorDownloadHandle for YtExtractor {
+impl<P, C> ExtractorDownloadHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync,
+    C: CacheAccess,
+{
     async fn download_initial_data(
         &self,
         video_id: &VideoId,

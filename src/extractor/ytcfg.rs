@@ -4,6 +4,7 @@ use anyhow::Result;
 use serde_json::{Map, Value};
 
 use crate::{
+    cache::CacheAccess,
     extractor::{
         auth::ExtractorAuthHandle,
         client::{INNERTUBE_CLIENTS, InnerTubeClient},
@@ -24,7 +25,11 @@ pub trait ExtractorYtCfgHandle {
     fn select_default_ytcfg(&self, default_client: Option<&YtClient>) -> Result<InnerTubeClient>;
 }
 
-impl ExtractorYtCfgHandle for YtExtractor {
+impl<P, C> ExtractorYtCfgHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + Send + Sync,
+    C: CacheAccess,
+{
     fn select_api_hostname(&self, default_client: Option<&YtClient>) -> &str {
         let client = default_client.unwrap_or(&self.tydle_options.default_client);
         let innertube_client = INNERTUBE_CLIENTS.get(client).unwrap();

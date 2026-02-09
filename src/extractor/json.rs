@@ -4,7 +4,7 @@ use anyhow::{Result, anyhow};
 use fancy_regex::Regex;
 use serde_json::Value;
 
-use crate::extractor::extract::YtExtractor;
+use crate::{cache::CacheAccess, extractor::extract::YtExtractor};
 
 pub trait ExtractorJsonHandle {
     fn find_key(&self, value: &Value, target: &str) -> Option<String>;
@@ -23,7 +23,11 @@ pub trait ExtractorJsonHandle {
     ) -> Option<String>;
 }
 
-impl ExtractorJsonHandle for YtExtractor {
+impl<P, C> ExtractorJsonHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + Send + Sync,
+    C: CacheAccess,
+{
     fn find_key(&self, value: &Value, target: &str) -> Option<String> {
         match value {
             Value::Object(map) => {

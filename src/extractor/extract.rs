@@ -10,7 +10,7 @@ use serde_json::{Map, Value};
 
 use crate::{
     TydleOptions,
-    cache::MemoryCacheStore,
+    cache::{CacheAccess, PlayerCacheHandle},
     cookies::CookieJar,
     extractor::{
         auth::ExtractorAuthHandle, client::INNERTUBE_CLIENTS, download::ExtractorDownloadHandle,
@@ -24,12 +24,16 @@ use crate::{
     },
 };
 
-pub struct YtExtractor {
+pub struct YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)>,
+    C: CacheAccess,
+{
     pub passed_auth_cookies: AtomicBool,
     pub http_client: reqwest::Client,
     pub cookie_jar: CookieJar,
-    pub player_cache: Arc<MemoryCacheStore<(String, String)>>,
-    pub code_cache: Arc<MemoryCacheStore>,
+    pub player_cache: Arc<P>,
+    pub code_cache: Arc<C>,
     pub tydle_options: TydleOptions,
 }
 
@@ -64,10 +68,14 @@ pub trait InfoExtractor {
     ) -> Result<(Vec<HashMap<String, Value>>, String)>;
 }
 
-impl YtExtractor {
+impl<P, C> YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle,
+    C: CacheAccess,
+{
     pub fn new(
-        player_cache: Arc<MemoryCacheStore<(String, String)>>,
-        code_cache: Arc<MemoryCacheStore>,
+        player_cache: Arc<P>,
+        code_cache: Arc<C>,
         tydle_options: TydleOptions,
     ) -> Result<Self> {
         let cookie_jar = CookieJar::new_with_cookies(tydle_options.auth_cookies.clone());
@@ -89,7 +97,11 @@ impl YtExtractor {
     }
 }
 
-impl InfoExtractor for YtExtractor {
+impl<P, C> InfoExtractor for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync,
+    C: CacheAccess + Send + Sync,
+{
     fn generate_checkok_params(&self) -> HashMap<String, Value> {
         let checkout_params_map = hashmap! {
             "contentCheckOk".into() => true.into(),

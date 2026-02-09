@@ -1,4 +1,6 @@
 use std::hash::Hash;
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 
 use anyhow::{Result, anyhow};
 use dashmap::DashMap;
@@ -9,6 +11,11 @@ pub struct MemoryCacheStore<T = String> {
     cache: DashMap<T, String>,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub struct DiskCacheStore {
+    path: PathBuf,
+}
+
 impl MemoryCacheStore {
     pub fn new<T: Eq + Hash>() -> MemoryCacheStore<T> {
         MemoryCacheStore {
@@ -17,7 +24,7 @@ impl MemoryCacheStore {
     }
 }
 
-pub trait CacheAccess<T = String> {
+pub trait CacheAccess<T = String>: Send + Sync {
     fn add(&self, key: T, value: String) -> Result<()>;
     fn contains(&self, key: &T) -> Result<bool>;
     fn get(&self, key: &T) -> Result<Option<String>>;
@@ -37,7 +44,7 @@ pub trait PlayerCacheHandle {
     -> Result<Option<String>>;
 }
 
-impl<T> CacheAccess<T> for MemoryCacheStore<T>
+impl<T: Send + Sync> CacheAccess<T> for MemoryCacheStore<T>
 where
     T: Eq + Hash,
 {
@@ -56,7 +63,10 @@ where
     }
 }
 
-impl PlayerCacheHandle for MemoryCacheStore<(String, String)> {
+impl<T> PlayerCacheHandle for T
+where
+    T: CacheAccess<(String, String)>,
+{
     fn extract_player_info(&self, player_url: &String) -> Result<String> {
         const PLAYER_INFO_RE: [&str; 3] = [
             r"/s/player/(?P<id>[a-zA-Z0-9_-]{8,})/(?:tv-)?player",
@@ -104,8 +114,8 @@ impl PlayerCacheHandle for MemoryCacheStore<(String, String)> {
             self.player_js_cache_key(&player_url)?,
         );
 
-        if let Some(data) = self.cache.get(&cache_id) {
-            return Ok(Some(data.clone()));
+        if let Some(data) = self.get(&cache_id)? {
+            return Ok(Some(data));
         }
 
         Ok(None)
@@ -129,4 +139,102 @@ impl PlayerCacheHandle for MemoryCacheStore<(String, String)> {
 
     //     Ok(())
     // }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl DiskCacheStore {
+    pub fn new(path: PathBuf) -> Self {
+        DiskCacheStore { path }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl CacheAccess for DiskCacheStore {
+    fn get(&self, key: &String) -> Result<Option<String>> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let key = sanitize_filename(key);
+        let file_path = &self.path.join("code").join(key);
+
+        if !fs::exists(file_path)? {
+            return Ok(None);
+        }
+
+        let cached_value = fs::read_to_string(file_path)?;
+        Ok(Some(cached_value))
+    }
+
+    fn add(&self, key: String, value: String) -> Result<()> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let folder_path = &self.path.join("code");
+        let key = sanitize_filename(&key);
+        let file_path = &folder_path.join(key);
+
+        if !fs::exists(folder_path)? {
+            fs::create_dir_all(folder_path)?;
+        }
+
+        fs::write(file_path, value)?;
+
+        Ok(())
+    }
+
+    fn contains(&self, key: &String) -> Result<bool> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let key = sanitize_filename(key);
+        let file_path = &self.path.join("code").join(key);
+        Ok(fs::exists(file_path)?)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl CacheAccess<(String, String)> for DiskCacheStore {
+    fn get(&self, key: &(String, String)) -> Result<Option<String>> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let (key_p1, key_p2) = (sanitize_filename(&key.0), sanitize_filename(&key.1));
+        let cache_key = format!("{}-{}", key_p1, key_p2);
+        let file_path = &self.path.join("player").join(cache_key);
+
+        if !fs::exists(file_path)? {
+            return Ok(None);
+        }
+
+        let cached_value = fs::read_to_string(file_path)?;
+        Ok(Some(cached_value))
+    }
+
+    fn add(&self, key: (String, String), value: String) -> Result<()> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let (key_p1, key_p2) = (sanitize_filename(&key.0), sanitize_filename(&key.1));
+        let cache_key = format!("{}-{}", key_p1, key_p2);
+        let folder_path = &self.path.join("player");
+        let file_path = &folder_path.join(cache_key);
+
+        if !fs::exists(folder_path)? {
+            fs::create_dir_all(folder_path)?;
+        }
+
+        fs::write(file_path, value)?;
+
+        Ok(())
+    }
+
+    fn contains(&self, key: &(String, String)) -> Result<bool> {
+        use crate::utils::sanitize_filename;
+        use std::fs;
+
+        let (key_p1, key_p2) = (sanitize_filename(&key.0), sanitize_filename(&key.1));
+        let cache_key = format!("{}-{}", key_p1, key_p2);
+        let file_path = &self.path.join("player").join(cache_key);
+        Ok(fs::exists(file_path)?)
+    }
 }

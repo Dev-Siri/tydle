@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Result, bail};
 
 use crate::{
-    cache::{CacheAccess, MemoryCacheStore, PlayerCacheHandle},
+    cache::{CacheAccess, PlayerCacheHandle},
     cipher::js::SignatureJsHandle,
     utils::{parse_query_string, replace_n_sig_query_param},
 };
@@ -22,16 +22,21 @@ impl SignatureType {
     }
 }
 
-pub struct SignatureDecipher {
-    pub player_cache: Arc<MemoryCacheStore<(String, String)>>,
-    pub code_cache: Arc<MemoryCacheStore>,
+pub struct SignatureDecipher<P, C>
+where
+    P: CacheAccess<(String, String)>,
+    C: CacheAccess,
+{
+    pub player_cache: Arc<P>,
+    pub code_cache: Arc<C>,
 }
 
-impl SignatureDecipher {
-    pub fn new(
-        player_cache: Arc<MemoryCacheStore<(String, String)>>,
-        code_cache: Arc<MemoryCacheStore>,
-    ) -> Self {
+impl<P, C> SignatureDecipher<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle,
+    C: CacheAccess,
+{
+    pub fn new(player_cache: Arc<P>, code_cache: Arc<C>) -> Self {
         Self {
             player_cache,
             code_cache,
@@ -55,7 +60,11 @@ pub trait SignatureDecipherHandle {
     async fn decipher(&self, signature: String, player_url: String) -> Result<String>;
 }
 
-impl SignatureDecipherHandle for SignatureDecipher {
+impl<P, C> SignatureDecipherHandle for SignatureDecipher<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle,
+    C: CacheAccess,
+{
     async fn extract_signature_function(
         &self,
         player_url: String,

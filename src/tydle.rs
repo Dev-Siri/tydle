@@ -1,6 +1,4 @@
 use anyhow::Result;
-#[cfg(not(target_arch = "wasm32"))]
-use std::path::PathBuf;
 use std::pin::Pin;
 #[cfg(feature = "cipher")]
 use std::sync::Mutex as StdMutex;
@@ -13,7 +11,7 @@ use tokio::sync::Mutex;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::cache::MemoryCacheStore;
+use crate::cache::{CacheAccess, MemoryCacheStore, PlayerCacheHandle};
 #[cfg(feature = "cipher")]
 use crate::cipher::decipher::{SignatureDecipher, SignatureDecipherHandle};
 use crate::cookies::DomainCookies;
@@ -22,14 +20,6 @@ use crate::{
     extractor::extract::{InfoExtractor, YtExtractor},
     yt_interface::VideoId,
 };
-
-#[cfg(not(target_arch = "wasm32"))]
-#[derive(Default)]
-pub enum CacheStrategy {
-    #[default]
-    Memory,
-    Disk(PathBuf),
-}
 
 #[cfg_attr(
     target_arch = "wasm32",
@@ -50,25 +40,48 @@ pub struct TydleOptions {
     pub proxy_address: String,
     /// Provide a default client that tydle will use to request YouTube when it fetches without a specific client internally.
     pub default_client: YtClient,
-    #[cfg(not(target_arch = "wasm32"))]
-    /// Provide a strategy for caching player JavaScript and player responses.
-    pub cache_strategy: CacheStrategy,
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-pub struct Tydle {
-    yt_extractor: Arc<Mutex<YtExtractor>>,
+pub struct Tydle<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync + 'static,
+    C: CacheAccess + Send + Sync + 'static,
+{
+    yt_extractor: Arc<Mutex<YtExtractor<P, C>>>,
     #[cfg(feature = "cipher")]
-    signature_decipher: Arc<StdMutex<SignatureDecipher>>,
+    signature_decipher: Arc<StdMutex<SignatureDecipher<P, C>>>,
 }
 
-impl Tydle {
+impl Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore> {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(options: TydleOptions) -> Result<Self> {
         let player_cache = Arc::new(MemoryCacheStore::new());
         let code_cache = Arc::new(MemoryCacheStore::new());
 
         let yt_extractor = YtExtractor::new(player_cache.clone(), code_cache.clone(), options)?;
+
+        #[cfg(feature = "cipher")]
+        let signature_decipher = SignatureDecipher::new(player_cache, code_cache);
+
+        Ok(Self {
+            yt_extractor: Arc::new(Mutex::new(yt_extractor)),
+            #[cfg(feature = "cipher")]
+            signature_decipher: Arc::new(StdMutex::new(signature_decipher)),
+        })
+    }
+}
+
+impl<P, C> Tydle<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync + 'static,
+    C: CacheAccess + Send + Sync + 'static,
+{
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn new_with_cache(options: TydleOptions, player_cache: P, code_cache: C) -> Result<Self> {
+        let player_cache = Arc::new(player_cache);
+        let code_cache = Arc::new(code_cache);
+        let yt_extractor = YtExtractor::new(player_cache.clone(), code_cache.clone(), options)?;
+
         #[cfg(feature = "cipher")]
         let signature_decipher = SignatureDecipher::new(player_cache, code_cache);
 
@@ -234,7 +247,11 @@ pub trait Cipher {
         Self: 'a;
 }
 
-impl Extract for Tydle {
+impl<P, C> Extract for Tydle<P, C>
+where
+    P: crate::cache::CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync + 'static,
+    C: crate::cache::CacheAccess + Send + Sync + 'static,
+{
     #[cfg(not(target_arch = "wasm32"))]
     type ExtractStreamFut<'a> = Pin<Box<dyn Future<Output = Result<YtStreamResponse>> + Send + 'a>>;
     #[cfg(not(target_arch = "wasm32"))]
@@ -322,7 +339,11 @@ impl Extract for Tydle {
 }
 
 #[cfg(feature = "cipher")]
-impl Cipher for Tydle {
+impl<P, C> Cipher for Tydle<P, C>
+where
+    P: crate::cache::CacheAccess<(String, String)> + PlayerCacheHandle + Send + Sync + 'static,
+    C: crate::cache::CacheAccess + Send + Sync + 'static,
+{
     type DecipherFut<'a> = Pin<Box<dyn Future<Output = Result<String>> + 'a>>;
 
     fn decipher_signature<'a>(
@@ -346,11 +367,16 @@ mod wasm_api {
     use wasm_bindgen::JsValue;
 
     #[wasm_bindgen]
-    impl Tydle {
+    pub struct TydleClient {
+        inner: Tydle<MemoryCacheStore<(String, String)>, MemoryCacheStore>,
+    }
+
+    #[wasm_bindgen]
+    impl TydleClient {
         #[wasm_bindgen(constructor)]
-        pub fn new(options: Option<TydleOptions>) -> Result<Tydle, JsValue> {
-            let player_cache = Arc::new(CacheStore::new());
-            let code_cache = Arc::new(CacheStore::new());
+        pub fn new(options: Option<TydleOptions>) -> Result<TydleClient, JsValue> {
+            let player_cache = Arc::new(MemoryCacheStore::new());
+            let code_cache = Arc::new(MemoryCacheStore::new());
 
             let yt_extractor = YtExtractor::new(
                 player_cache.clone(),
@@ -361,9 +387,11 @@ mod wasm_api {
 
             let signature_decipher = SignatureDecipher::new(player_cache, code_cache);
 
-            Ok(Tydle {
-                yt_extractor: Arc::new(Mutex::new(yt_extractor)),
-                signature_decipher: Arc::new(Mutex::new(signature_decipher)),
+            Ok(TydleClient {
+                inner: Tydle {
+                    yt_extractor: Arc::new(Mutex::new(yt_extractor)),
+                    signature_decipher: Arc::new(Mutex::new(signature_decipher)),
+                },
             })
         }
 
@@ -375,6 +403,7 @@ mod wasm_api {
             let id = VideoId::new(&video_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
             Ok(self
+                .inner
                 .get_streams(&id)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?)
@@ -388,6 +417,7 @@ mod wasm_api {
             let id = VideoId::new(&video_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
             Ok(self
+                .inner
                 .get_video_info(&id)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?)
@@ -399,6 +429,7 @@ mod wasm_api {
             manifest: YtManifest,
         ) -> Result<YtVideoInfo, JsValue> {
             Ok(self
+                .inner
                 .get_video_info_from_manifest(&manifest)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?)
@@ -410,6 +441,7 @@ mod wasm_api {
             manifest: YtManifest,
         ) -> Result<YtStreamResponse, JsValue> {
             Ok(self
+                .inner
                 .get_streams_from_manifest(&manifest)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?)
@@ -423,6 +455,7 @@ mod wasm_api {
             let id = VideoId::new(&video_id).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
             Ok(self
+                .inner
                 .get_manifest(&id)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?)
@@ -435,6 +468,7 @@ mod wasm_api {
             #[wasm_bindgen(js_name = "playerUrl")] player_url: String,
         ) -> Result<String, JsValue> {
             let res = self
+                .inner
                 .decipher_signature(signature, player_url)
                 .await
                 .map_err(|e| JsValue::from_str(&e.to_string()))?;

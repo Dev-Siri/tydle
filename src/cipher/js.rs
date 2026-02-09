@@ -15,7 +15,7 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    cache::CacheAccess,
+    cache::{CacheAccess, PlayerCacheHandle},
     cipher::decipher::{SignatureDecipher, SignatureType},
 };
 
@@ -29,7 +29,11 @@ pub trait SignatureJsHandle {
     ) -> Result<String>;
 }
 
-impl SignatureJsHandle for SignatureDecipher {
+impl<P, C> SignatureJsHandle for SignatureDecipher<P, C>
+where
+    P: CacheAccess<(String, String)> + PlayerCacheHandle,
+    C: CacheAccess,
+{
     async fn get_js_modules(&self) -> Result<(String, String)> {
         const YT_DLP_YT_SOLVER_PKG_LIB_URL: &str =
             "https://github.com/yt-dlp/ejs/releases/download/0.3.1/yt.solver.lib.min.js";

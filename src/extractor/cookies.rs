@@ -4,6 +4,7 @@ use anyhow::Result;
 use sha1::{Digest, Sha1};
 
 use crate::{
+    cache::CacheAccess,
     cookies::{CookieStore, DomainCookies},
     extractor::extract::YtExtractor,
     utils::unix_timestamp_secs,
@@ -51,7 +52,11 @@ pub trait ExtractorCookieHandle {
     ) -> Result<Option<String>>;
 }
 
-impl ExtractorCookieHandle for YtExtractor {
+impl<P, C> ExtractorCookieHandle for YtExtractor<P, C>
+where
+    P: CacheAccess<(String, String)> + Send + Sync,
+    C: CacheAccess,
+{
     fn get_cookies(&self, url: &str) -> Result<DomainCookies> {
         let cookies = self.cookie_jar.get_all(url)?;
         Ok(cookies)

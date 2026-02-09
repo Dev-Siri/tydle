@@ -22,7 +22,7 @@ use anyhow::Result;
 use tydle::{Tydle, TydleOptions, Extract};
 
 async fn main() -> Result<()> {
-  // Initialize `tydle`
+  // Initialize `tydle`, this will use in-memory caching (default).
   let ty = Tydle::new(TydleOptions { ..Default::default() })?;
 
   // Now you can fetch depending on what you need.
@@ -33,6 +33,23 @@ async fn main() -> Result<()> {
   Ok(())
 }
 ```
+
+## Config Caching
+
+Tydle supports In-memory caching (Default) and Disk caching (Slower but less likely to OOM in the long run.)
+If you use the `::new()` constructor, Tydle will configure with the in-memory cache, which is faster, and likely good enough for most cases.
+However, in case you have a long running application (e.g. a Tauri desktop app), then that cache can quickly build up memory. (YouTube player.js scripts are large)
+So in that case, you can initialize Tydle with a custom caching option:
+
+```rs
+let tydle = Tydle::new_with_cache(
+  TydleOptions::default(),
+  DiskCacheStore::new(cache_path.clone()),
+  DiskCacheStore::new(cache_path),
+)?;
+```
+
+This even allows you to use separate caching implementations for player/code caches. Mostly, you'll see the `code` caches to be more heavily be used.
 
 ### Managing Streams, Metadata and Manifests
 
@@ -83,14 +100,16 @@ async fn main() -> Result<()> {
 Since `tydle` also compiles to WebAssembly, you can easily use it from TypeScript as well. Here's a simple example using TypeScript:
 
 ```ts
-import { Tydle } from "@wvlen/tydle";
+import { TydleClient } from "@wvlen/tydle";
 
-const tydle = new Tydle();
+const tydle = new TydleClient();
 
 const { streams } = await tydle.fetchStreams("xITJ35Kwpv4");
 
 console.log(streams);
 ```
+
+Do note that the TypeScript version solely uses in-memory caching.
 
 ### Pitfalls Of Using WASM For Browsers
 
@@ -102,11 +121,11 @@ However, to make up for this, you can probably create a serverless function with
 
 ```ts
 import { error } from "@sveltejs/kit";
-import { Tydle } from "@wvlen/tydle";
+import { TydleClient } from "@wvlen/tydle";
 
 export async function GET({ params: { videoId } }) {
   try {
-    const tydle = new Tydle();
+    const tydle = new TydleClient();
     const streams = await tydle.fetchStreams(videoId);
     const urlStreams = streams.filter((stream) => "url" in stream.source);
 

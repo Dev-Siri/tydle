@@ -5,8 +5,8 @@ use clap::Parser;
 use colored::Colorize;
 use tokio::fs;
 use tydle::{
-    Cipher, Ext, Extract, Filterable, Tydle, TydleOptions, VideoId, YtStream, YtStreamSource,
-    cookies::parse_netscape_cookies,
+    Cipher, DiskCacheStore, Ext, Extract, Filterable, Tydle, TydleOptions, VideoId, YtStream,
+    YtStreamSource, cookies::parse_netscape_cookies,
 };
 
 use crate::{
@@ -63,15 +63,20 @@ async fn run() -> Result<()> {
         None => Default::default(),
     };
 
+    let cache_path = std::env::temp_dir().join("tydle_cache");
     let format = parse_format(args.format.unwrap_or("bestvideo".into()).as_str())?;
 
     tydle::logger::init_logging("info");
-    let tydle = Tydle::new(TydleOptions {
-        auth_cookies,
-        prefer_insecure: args.prefer_insecure,
-        source_address: args.source_ip.unwrap_or_default(),
-        ..Default::default()
-    })?;
+    let tydle = Tydle::new_with_cache(
+        TydleOptions {
+            auth_cookies,
+            prefer_insecure: args.prefer_insecure,
+            source_address: args.source_ip.unwrap_or_default(),
+            ..Default::default()
+        },
+        DiskCacheStore::new(cache_path.clone()),
+        DiskCacheStore::new(cache_path),
+    )?;
 
     let video_id = VideoId::new(args.video_id)?;
     let yt_stream_response = tydle.get_streams(&video_id).await?;
