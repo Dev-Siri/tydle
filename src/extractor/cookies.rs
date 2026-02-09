@@ -4,11 +4,10 @@ use anyhow::Result;
 use sha1::{Digest, Sha1};
 
 use crate::{
-    YT_DOMAIN,
     cookies::{CookieStore, DomainCookies},
     extractor::extract::YtExtractor,
     utils::unix_timestamp_secs,
-    yt_interface::YT_URL,
+    yt_interface::{YT_DOMAIN, YT_URL},
 };
 
 #[derive(Debug)]

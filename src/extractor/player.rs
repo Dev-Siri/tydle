@@ -6,7 +6,6 @@ use maplit::hashmap;
 use serde_json::{Map, Value, json};
 
 use crate::{
-    STREAMING_DATA_CLIENT_NAME, STREAMING_DATA_INNERTUBE_CONTEXT,
     cache::{CacheAccess, PlayerCacheHandle},
     extractor::{
         api::ExtractorApiHandle,
@@ -17,7 +16,8 @@ use crate::{
         ytcfg::ExtractorYtCfgHandle,
     },
     yt_interface::{
-        PLAYER_JS_MAIN_VARIANT, PlayerIdentifier, VideoId, YT_URL, YtClient, YtEndpoint,
+        PLAYER_JS_MAIN_VARIANT, PlayerIdentifier, STREAMING_DATA_CLIENT_NAME,
+        STREAMING_DATA_INNERTUBE_CONTEXT, VideoId, YT_URL, YtClient, YtEndpoint,
     },
 };
 

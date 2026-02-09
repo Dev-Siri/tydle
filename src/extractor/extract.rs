@@ -5,11 +5,12 @@ use std::{
 
 use anyhow::{Result, anyhow, bail};
 use fancy_regex::Regex;
+use maplit::hashmap;
 use serde_json::{Map, Value};
 
 use crate::{
-    TydleOptions, YT_SUB_DOMAIN,
-    cache::CacheStore,
+    TydleOptions,
+    cache::MemoryCacheStore,
     cookies::CookieJar,
     extractor::{
         auth::ExtractorAuthHandle, client::INNERTUBE_CLIENTS, download::ExtractorDownloadHandle,
@@ -17,9 +18,9 @@ use crate::{
     },
     utils::{file_size_from_tbr, mime_type_to_ext, parse_codecs},
     yt_interface::{
-        AudioTrackInfo, Codec, Ext, STREAMING_DATA_CLIENT_NAME, VideoId, YtAgeLimit, YtChannel,
-        YtClient, YtManifest, YtMediaType, YtStream, YtStreamResponse, YtStreamSource, YtThumbnail,
-        YtVideoInfo,
+        AudioTrackInfo, Codec, Ext, STREAMING_DATA_CLIENT_NAME, VideoId, YT_SUB_DOMAIN, YtAgeLimit,
+        YtChannel, YtClient, YtManifest, YtMediaType, YtStream, YtStreamResponse, YtStreamSource,
+        YtThumbnail, YtVideoInfo,
     },
 };
 
@@ -27,8 +28,8 @@ pub struct YtExtractor {
     pub passed_auth_cookies: AtomicBool,
     pub http_client: reqwest::Client,
     pub cookie_jar: CookieJar,
-    pub player_cache: Arc<CacheStore<(String, String)>>,
-    pub code_cache: Arc<CacheStore>,
+    pub player_cache: Arc<MemoryCacheStore<(String, String)>>,
+    pub code_cache: Arc<MemoryCacheStore>,
     pub tydle_options: TydleOptions,
 }
 
@@ -65,8 +66,8 @@ pub trait InfoExtractor {
 
 impl YtExtractor {
     pub fn new(
-        player_cache: Arc<CacheStore<(String, String)>>,
-        code_cache: Arc<CacheStore>,
+        player_cache: Arc<MemoryCacheStore<(String, String)>>,
+        code_cache: Arc<MemoryCacheStore>,
         tydle_options: TydleOptions,
     ) -> Result<Self> {
         let cookie_jar = CookieJar::new_with_cookies(tydle_options.auth_cookies.clone());
@@ -90,10 +91,10 @@ impl YtExtractor {
 
 impl InfoExtractor for YtExtractor {
     fn generate_checkok_params(&self) -> HashMap<String, Value> {
-        let mut checkout_params_map = HashMap::new();
-
-        checkout_params_map.insert("contentCheckOk".into(), true.into());
-        checkout_params_map.insert("racyCheckOk".into(), true.into());
+        let checkout_params_map = hashmap! {
+            "contentCheckOk".into() => true.into(),
+            "racyCheckOk".into() => true.into(),
+        };
 
         checkout_params_map
     }

@@ -2,7 +2,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::ptr;
 
-use crate::{Extract, Tydle, TydleOptions, VideoId};
+use crate::{Extract, Tydle, TydleOptions, yt_interface::VideoId};
 use anyhow::Result;
 
 #[unsafe(no_mangle)]
@@ -138,7 +138,7 @@ pub extern "C" fn tydle_streams_from_manifest_json(
         Err(_) => return ptr::null_mut(),
     };
 
-    let manifest: crate::YtManifest = match serde_json::from_str(manifest_str) {
+    let manifest = match serde_json::from_str(manifest_str) {
         Ok(m) => m,
         Err(_) => return ptr::null_mut(),
     };
@@ -172,7 +172,7 @@ pub extern "C" fn tydle_video_info_from_manifest_json(
         Err(_) => return ptr::null_mut(),
     };
 
-    let manifest: crate::YtManifest = match serde_json::from_str(manifest_str) {
+    let manifest = match serde_json::from_str(manifest_str) {
         Ok(m) => m,
         Err(_) => return ptr::null_mut(),
     };

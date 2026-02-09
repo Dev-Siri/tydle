@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Result, bail};
 
 use crate::{
-    cache::{CacheAccess, CacheStore, PlayerCacheHandle},
+    cache::{CacheAccess, MemoryCacheStore, PlayerCacheHandle},
     cipher::js::SignatureJsHandle,
     utils::{parse_query_string, replace_n_sig_query_param},
 };
@@ -23,14 +23,14 @@ impl SignatureType {
 }
 
 pub struct SignatureDecipher {
-    pub player_cache: Arc<CacheStore<(String, String)>>,
-    pub code_cache: Arc<CacheStore>,
+    pub player_cache: Arc<MemoryCacheStore<(String, String)>>,
+    pub code_cache: Arc<MemoryCacheStore>,
 }
 
 impl SignatureDecipher {
     pub fn new(
-        player_cache: Arc<CacheStore<(String, String)>>,
-        code_cache: Arc<CacheStore>,
+        player_cache: Arc<MemoryCacheStore<(String, String)>>,
+        code_cache: Arc<MemoryCacheStore>,
     ) -> Self {
         Self {
             player_cache,

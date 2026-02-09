@@ -1,4 +1,6 @@
 use anyhow::Result;
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::PathBuf;
 use std::pin::Pin;
 #[cfg(feature = "cipher")]
 use std::sync::Mutex as StdMutex;
@@ -11,16 +13,23 @@ use tokio::sync::Mutex;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::YtClient;
-use crate::cache::CacheStore;
+use crate::cache::MemoryCacheStore;
 #[cfg(feature = "cipher")]
 use crate::cipher::decipher::{SignatureDecipher, SignatureDecipherHandle};
 use crate::cookies::DomainCookies;
-use crate::yt_interface::{YtManifest, YtStreamResponse, YtVideoInfo};
+use crate::yt_interface::{YtClient, YtManifest, YtStreamResponse, YtVideoInfo};
 use crate::{
     extractor::extract::{InfoExtractor, YtExtractor},
     yt_interface::VideoId,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+pub enum CacheStrategy {
+    #[default]
+    Memory,
+    Disk(PathBuf),
+}
 
 #[cfg_attr(
     target_arch = "wasm32",
@@ -41,6 +50,9 @@ pub struct TydleOptions {
     pub proxy_address: String,
     /// Provide a default client that tydle will use to request YouTube when it fetches without a specific client internally.
     pub default_client: YtClient,
+    #[cfg(not(target_arch = "wasm32"))]
+    /// Provide a strategy for caching player JavaScript and player responses.
+    pub cache_strategy: CacheStrategy,
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -53,8 +65,8 @@ pub struct Tydle {
 impl Tydle {
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(options: TydleOptions) -> Result<Self> {
-        let player_cache = Arc::new(CacheStore::new());
-        let code_cache = Arc::new(CacheStore::new());
+        let player_cache = Arc::new(MemoryCacheStore::new());
+        let code_cache = Arc::new(MemoryCacheStore::new());
 
         let yt_extractor = YtExtractor::new(player_cache.clone(), code_cache.clone(), options)?;
         #[cfg(feature = "cipher")]

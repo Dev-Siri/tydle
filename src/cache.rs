@@ -1,22 +1,23 @@
-use std::{collections::HashMap, hash::Hash, sync::RwLock};
+use std::hash::Hash;
 
 use anyhow::{Result, anyhow};
+use dashmap::DashMap;
 use fancy_regex::Regex;
 use url::Url;
 
-pub struct CacheStore<T = String> {
-    cache: RwLock<HashMap<T, String>>,
+pub struct MemoryCacheStore<T = String> {
+    cache: DashMap<T, String>,
 }
 
-impl CacheStore {
-    pub fn new<T>() -> CacheStore<T> {
-        CacheStore {
-            cache: Default::default(),
+impl MemoryCacheStore {
+    pub fn new<T: Eq + Hash>() -> MemoryCacheStore<T> {
+        MemoryCacheStore {
+            cache: DashMap::default(),
         }
     }
 }
 
-pub trait CacheAccess<T> {
+pub trait CacheAccess<T = String> {
     fn add(&self, key: T, value: String) -> Result<()>;
     fn contains(&self, key: &T) -> Result<bool>;
     fn get(&self, key: &T) -> Result<Option<String>>;
@@ -36,38 +37,26 @@ pub trait PlayerCacheHandle {
     -> Result<Option<String>>;
 }
 
-impl<T> CacheAccess<T> for CacheStore<T>
+impl<T> CacheAccess<T> for MemoryCacheStore<T>
 where
     T: Eq + Hash,
 {
     fn get(&self, key: &T) -> Result<Option<String>> {
-        Ok(self
-            .cache
-            .read()
-            .map_err(|e| anyhow!(e.to_string()))?
-            .get(key)
-            .cloned())
+        let value = self.cache.get(key);
+        Ok(value.map(|v| v.value().clone()))
     }
 
     fn add(&self, key: T, value: String) -> Result<()> {
-        self.cache
-            .write()
-            .map_err(|e| anyhow!(e.to_string()))?
-            .insert(key, value);
-
+        self.cache.insert(key, value);
         Ok(())
     }
 
     fn contains(&self, key: &T) -> Result<bool> {
-        Ok(self
-            .cache
-            .read()
-            .map_err(|e| anyhow!(e.to_string()))?
-            .contains_key(key))
+        Ok(self.cache.contains_key(key))
     }
 }
 
-impl PlayerCacheHandle for CacheStore<(String, String)> {
+impl PlayerCacheHandle for MemoryCacheStore<(String, String)> {
     fn extract_player_info(&self, player_url: &String) -> Result<String> {
         const PLAYER_INFO_RE: [&str; 3] = [
             r"/s/player/(?P<id>[a-zA-Z0-9_-]{8,})/(?:tv-)?player",
@@ -115,12 +104,7 @@ impl PlayerCacheHandle for CacheStore<(String, String)> {
             self.player_js_cache_key(&player_url)?,
         );
 
-        if let Some(data) = self
-            .cache
-            .read()
-            .map_err(|e| anyhow!(e.to_string()))?
-            .get(&cache_id)
-        {
+        if let Some(data) = self.cache.get(&cache_id) {
             return Ok(Some(data.clone()));
         }
 
