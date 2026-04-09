@@ -155,12 +155,19 @@ use tydle::{Tydle, TydleOptions, Cipher};
 #[tokio::main]
 async fn main() -> Result<()> {
   let ty = Tydle::new(TydleOptions { ..Default::default() })?;
+  let yt_stream_response = ty.get_streams(...).await?;
 
-  let deciphered = ty.decipher_signature(...).await?;
+  // Filter through the streams to find the signature.
+  let deciphered = ty.decipher_signature(
+    /* signature */ "...",
+    yt_stream_response.player_url,
+  ).await?;
 
   Ok(())
 }
 ```
+
+However, do note that if you have `force_default_client: true` in `TydleOptions`, then decipher can fail because the `player.js` file may not have been always downloaded on one client request.
 
 ## Developing Locally
 

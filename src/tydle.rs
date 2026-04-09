@@ -40,6 +40,8 @@ pub struct TydleOptions {
     pub proxy_address: String,
     /// Provide a default client that tydle will use to request YouTube when it fetches without a specific client internally.
     pub default_client: YtClient,
+    /// Tell tydle to only fetch with the default_client.
+    pub force_default_client: bool,
 }
 
 pub struct Tydle<P, C>

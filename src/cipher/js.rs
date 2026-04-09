@@ -36,9 +36,9 @@ where
 {
     async fn get_js_modules(&self) -> Result<(String, String)> {
         const YT_DLP_YT_SOLVER_PKG_LIB_URL: &str =
-            "https://github.com/yt-dlp/ejs/releases/download/0.3.1/yt.solver.lib.min.js";
+            "https://github.com/yt-dlp/ejs/releases/download/0.8.0/yt.solver.lib.min.js";
         const YT_DLP_YT_SOLVER_PKG_CORE_URL: &str =
-            "https://github.com/yt-dlp/ejs/releases/download/0.3.1/yt.solver.core.min.js";
+            "https://github.com/yt-dlp/ejs/releases/download/0.8.0/yt.solver.core.min.js";
 
         let lib_code = match self.code_cache.get(&YT_DLP_YT_SOLVER_PKG_LIB_URL.into())? {
             Some(cached_lib_code) => cached_lib_code,
